@@ -340,7 +340,15 @@
       <div class="dash-panel reveal">
         <div class="dash-panel-header">
           <h3 class="dash-panel-title">Pedidos Recientes</h3>
-          <span style="font-family:'Josefin Sans';font-size:10px;letter-spacing:1px;color:var(--gold);">Ver todos →</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button onclick="clearUserOrders()" title="Limpiar historial de pedidos propios"
+              style="font-family:'Josefin Sans',sans-serif;font-size:9px;letter-spacing:1px;color:var(--text-secondary);background:none;border:1px solid var(--border-color);border-radius:6px;padding:3px 8px;cursor:pointer;transition:color 0.2s,border-color 0.2s;"
+              onmouseover="this.style.color='var(--error)';this.style.borderColor='var(--error)'"
+              onmouseout="this.style.color='var(--text-secondary)';this.style.borderColor='var(--border-color)'">
+              🗑 Limpiar historial
+            </button>
+            <span style="font-family:'Josefin Sans';font-size:10px;letter-spacing:1px;color:var(--gold);">Ver todos →</span>
+          </div>
         </div>
         <div class="dash-panel-body" id="recent-orders"></div>
       </div>
