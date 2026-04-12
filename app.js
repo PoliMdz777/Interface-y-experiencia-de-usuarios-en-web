@@ -1042,6 +1042,13 @@ function validateField(input) {
   }
   return !error;
 }
+function generateOrderId() {
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var result = '';
+  for (var i = 0; i < 6; i++) result += chars[Math.floor(Math.random() * chars.length)];
+  return 'TCS.' + result;
+}
+
 function handleFormSubmit(e) {
   e.preventDefault();
   const fields = ['fname','lname','email','address'];
@@ -1050,6 +1057,14 @@ function handleFormSubmit(e) {
     const el = document.getElementById(id);
     if (!validateField(el)) valid = false;
   });
+
+  // Also require at least one product selected
+  const selectedItems = Object.values(pickerSelection);
+  if (!selectedItems.length) {
+    toast('Selecciona al menos un producto antes de enviar el pedido.', 'error');
+    valid = false;
+  }
+
   if (!valid) {
     toast('Por favor corrige los errores del formulario.', 'error');
     document.querySelector('.form-input.error')?.focus();
@@ -1060,11 +1075,32 @@ function handleFormSubmit(e) {
   btn.disabled = true;
   btn.classList.add('loading');
   btnText.textContent = 'Enviando...';
+
   setTimeout(() => {
     btn.classList.remove('loading');
     btn.classList.add('sent');
     btnText.textContent = '✅ Pedido enviado';
-    toast('¡Pedido enviado con éxito! Te contactaremos pronto.', 'success');
+
+    // Build cart snapshot from pickerSelection
+    var cartSnapshot = selectedItems.map(function(s) {
+      return { name: s.product.name, qty: s.qty, price: s.product.price, emoji: s.product.emoji };
+    });
+    var grandTotal = cartSnapshot.reduce(function(sum, i) { return sum + i.price * i.qty; }, 0);
+    var shipping = grandTotal >= 40 ? 0 : 4.99;
+    var orderId = generateOrderId();
+    var displayTotal = (grandTotal + shipping).toFixed(2);
+
+    // Add to live dashboard
+    addLiveOrder(orderId, cartSnapshot, displayTotal);
+
+    toast('¡Pedido #' + orderId + ' enviado con éxito! Te contactaremos pronto.', 'success');
+
+    // Reset picker selection
+    pickerSelection = {};
+    var cat = document.getElementById('category') ? document.getElementById('category').value : '';
+    if (cat) renderProductPicker(cat);
+    updatePickerSummary();
+
     setTimeout(() => {
       btn.disabled = false;
       btn.classList.remove('sent');
@@ -1283,10 +1319,41 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ═══════════════════════════════════════════
-// LIVE ORDER HISTORY — session-based, real-time
+// LIVE ORDER HISTORY — persistent + real-time
 // ═══════════════════════════════════════════
-var liveOrders = RECENT_ORDERS.slice();
-var liveOrderCount = 142;
+
+// ── Persistence helpers ──────────────────────────────
+var STORAGE_KEY = 'tcs_user_orders';
+
+function saveOrdersToStorage(orders) {
+  try {
+    // Only save real user orders (those with a timestamp), not the demo data
+    var userOrders = orders.filter(function(o) { return o.isUserOrder; });
+    // Convert timestamp Date objects to ISO strings for storage
+    var toSave = userOrders.map(function(o) {
+      return Object.assign({}, o, { timestamp: o.timestamp ? o.timestamp.toISOString() : null });
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch(e) { /* silent fail */ }
+}
+
+function loadOrdersFromStorage() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    var parsed = JSON.parse(raw);
+    return parsed.map(function(o) {
+      return Object.assign({}, o, {
+        timestamp: o.timestamp ? new Date(o.timestamp) : null
+      });
+    });
+  } catch(e) { return []; }
+}
+
+// Merge: real user orders first, then demo orders (no duplicates)
+var savedUserOrders = loadOrdersFromStorage();
+var liveOrders = savedUserOrders.concat(RECENT_ORDERS.slice());
+var liveOrderCount = 142 + savedUserOrders.length;
 var newOrdersCount = 0;
 
 var STATUS_LABELS = {
@@ -1327,6 +1394,7 @@ function addLiveOrder(orderId, cartSnapshot, grandTotal) {
     status: 'pending',
     id: orderId,
     isNew: true,
+    isUserOrder: true,
     timestamp: now,
     items: cartSnapshot.map(function(i) {
       return { name: i.name, qty: i.qty, price: i.price, emoji: i.emoji };
@@ -1334,7 +1402,13 @@ function addLiveOrder(orderId, cartSnapshot, grandTotal) {
   };
 
   liveOrders.unshift(newOrder);
-  if (liveOrders.length > 10) liveOrders.pop();
+  // Keep max 20 total but never trim user orders
+  while (liveOrders.length > 20) {
+    // Remove the last demo/non-user order
+    var lastIdx = liveOrders.length - 1;
+    if (!liveOrders[lastIdx].isUserOrder) { liveOrders.pop(); } else { break; }
+  }
+  saveOrdersToStorage(liveOrders);
   liveOrderCount++;
   newOrdersCount++;
 
@@ -1369,6 +1443,7 @@ function updateOrderStatus(orderId, newStatus) {
   if (!order || order.status === 'delivered') return;
   order.status = newStatus;
   if (order.timestamp) order.date = formatOrderTime(order.timestamp);
+  saveOrdersToStorage(liveOrders);
   renderDashboard();
   var labels = { transit: '🚚 Tu pedido esta en camino', delivered: '✅ Tu pedido ha sido entregado' };
   if (labels[newStatus]) toast(labels[newStatus] + ' — #' + orderId, newStatus === 'delivered' ? 'success' : '');
@@ -1387,9 +1462,20 @@ function cycleOrderStatus(orderId) {
   if (!order) return;
   var cycle = { pending: 'transit', transit: 'delivered', delivered: 'pending' };
   order.status = cycle[order.status] || 'pending';
+  saveOrdersToStorage(liveOrders);
   renderDashboard();
   var st = STATUS_LABELS[order.status];
   toast('Pedido #' + orderId + ' → ' + st.icon + ' ' + st.text);
+}
+
+function clearUserOrders() {
+  if (!confirm('¿Borrar todo tu historial de pedidos? Esta acción no se puede deshacer.')) return;
+  liveOrders = liveOrders.filter(function(o) { return !o.isUserOrder; });
+  liveOrderCount = 142;
+  newOrdersCount = 0;
+  localStorage.removeItem(STORAGE_KEY);
+  renderDashboard();
+  toast('Historial borrado.', '');
 }
 
 // Refresh timestamps every 30s
@@ -1421,10 +1507,11 @@ function renderDashboard() {
       }
       var newDot = (o2.isNew && j === 0) ? '<span class="live-dot" title="Nuevo pedido"></span> ' : '';
       var idTag = o2.id ? ' <span class="dash-order-id">#' + o2.id + '</span>' : '';
-      ordersHtml += '<div class="dash-order' + (o2.isNew && j === 0 ? ' new-order' : '') + '" role="listitem">' +
+      var userTag = o2.isUserOrder ? '<span class="dash-order-user-tag" title="Tu pedido">TU PEDIDO</span>' : '';
+      ordersHtml += '<div class="dash-order' + (o2.isNew && j === 0 ? ' new-order' : '') + (o2.isUserOrder ? ' user-order' : '') + '" role="listitem">' +
         '<div class="dash-order-emoji" aria-hidden="true">' + o2.emoji + '</div>' +
         '<div class="dash-order-info">' +
-          '<div class="dash-order-name">' + o2.name + idTag + '</div>' +
+          '<div class="dash-order-name">' + o2.name + idTag + userTag + '</div>' +
           itemDetail +
           '<div class="dash-order-meta">' + newDot + o2.date + '</div>' +
         '</div>' +
