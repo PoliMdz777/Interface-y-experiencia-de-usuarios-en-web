@@ -1327,14 +1327,27 @@ var STORAGE_KEY = 'tcs_user_orders';
 
 function saveOrdersToStorage(orders) {
   try {
-    // Only save real user orders (those with a timestamp), not the demo data
-    var userOrders = orders.filter(function(o) { return o.isUserOrder; });
-    // Convert timestamp Date objects to ISO strings for storage
+    var userOrders = orders.filter(function(o) { return o.isUserOrder === true; });
     var toSave = userOrders.map(function(o) {
-      return Object.assign({}, o, { timestamp: o.timestamp ? o.timestamp.toISOString() : null });
+      return {
+        id:          o.id,
+        name:        o.name,
+        emoji:       o.emoji,
+        price:       o.price,
+        status:      o.status,
+        isUserOrder: true,
+        isNew:       false,
+        timestamp:   o.timestamp instanceof Date ? o.timestamp.toISOString() : (o.timestamp || null),
+        items:       Array.isArray(o.items) ? o.items.map(function(it) {
+          return { name: it.name, qty: it.qty, price: it.price, emoji: it.emoji };
+        }) : []
+      };
     });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-  } catch(e) { /* silent fail */ }
+    var json = JSON.stringify(toSave);
+    localStorage.setItem(STORAGE_KEY, json);
+  } catch(e) {
+    console.error('[TCS] Error guardando pedidos en localStorage:', e);
+  }
 }
 
 function loadOrdersFromStorage() {
@@ -1342,12 +1355,27 @@ function loadOrdersFromStorage() {
     var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     var parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
     return parsed.map(function(o) {
-      return Object.assign({}, o, {
-        timestamp: o.timestamp ? new Date(o.timestamp) : null
-      });
+      var ts = null;
+      if (o.timestamp) { try { ts = new Date(o.timestamp); } catch(e) { ts = null; } }
+      return {
+        id:          o.id || '',
+        name:        o.name || '',
+        emoji:       o.emoji || '🧀',
+        price:       o.price || '£0.00',
+        status:      o.status || 'pending',
+        isUserOrder: true,
+        isNew:       false,
+        timestamp:   ts,
+        date:        ts ? formatOrderTime(ts) : '',
+        items:       Array.isArray(o.items) ? o.items : []
+      };
     });
-  } catch(e) { return []; }
+  } catch(e) {
+    console.error('[TCS] Error cargando pedidos de localStorage:', e);
+    return [];
+  }
 }
 
 // Merge: real user orders first, then demo orders (no duplicates)
@@ -1557,3 +1585,83 @@ function renderDashboard() {
     topEl.innerHTML = topHtml;
   }
 }
+// ═══════════════════════════════════════════
+// CHEESE CURSOR — same as login.html
+// ═══════════════════════════════════════════
+(function initCheeseCursor() {
+  // Inject HTML elements if not already present
+  if (!document.getElementById('cursor-fog')) {
+    var fog = document.createElement('div');
+    fog.className = 'cursor-fog';
+    fog.id = 'cursor-fog';
+    fog.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(fog);
+  }
+  if (!document.getElementById('cursor-cheese')) {
+    var cheese = document.createElement('div');
+    cheese.className = 'cursor-cheese';
+    cheese.id = 'cursor-cheese';
+    cheese.setAttribute('aria-hidden', 'true');
+    cheese.textContent = '🧀';
+    document.body.appendChild(cheese);
+  }
+
+  var fog    = document.getElementById('cursor-fog');
+  var cheese = document.getElementById('cursor-cheese');
+  if (!cheese) return;
+
+  // Respect reduced motion
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (fog) fog.style.display = 'none';
+    cheese.style.display = 'none';
+    document.body.style.cursor = '';
+    return;
+  }
+
+  var mouseX = window.innerWidth / 2,  mouseY = window.innerHeight / 2;
+  var fogX   = mouseX, fogY = mouseY;
+  var cheeseX = mouseX, cheeseY = mouseY;
+  var FOG_LERP = 0.09, CHEESE_LERP = 0.18;
+  var trailCounter = 0, TRAIL_INTERVAL = 4;
+
+  document.addEventListener('mousemove', function(e) { mouseX = e.clientX; mouseY = e.clientY; });
+  document.addEventListener('mouseleave', function() {
+    if (fog)    fog.style.opacity = '0';
+    cheese.style.opacity = '0';
+  });
+  document.addEventListener('mouseenter', function() {
+    if (fog)    fog.style.opacity = '1';
+    cheese.style.opacity = '1';
+  });
+  document.addEventListener('mousedown', function() { cheese.classList.add('clicking'); });
+  document.addEventListener('mouseup',   function() { cheese.classList.remove('clicking'); });
+
+  function spawnTrail(x, y) {
+    var dot = document.createElement('div');
+    dot.className = 'cursor-trail';
+    dot.style.left = x + 'px';
+    dot.style.top  = y + 'px';
+    document.body.appendChild(dot);
+    setTimeout(function() { dot.remove(); }, 520);
+  }
+
+  function animate() {
+    if (fog) {
+      fogX += (mouseX - fogX) * FOG_LERP;
+      fogY += (mouseY - fogY) * FOG_LERP;
+      fog.style.left = fogX + 'px';
+      fog.style.top  = fogY + 'px';
+    }
+    cheeseX += (mouseX - cheeseX) * CHEESE_LERP;
+    cheeseY += (mouseY - cheeseY) * CHEESE_LERP;
+    cheese.style.left = cheeseX + 'px';
+    cheese.style.top  = cheeseY + 'px';
+
+    var dist = Math.hypot(mouseX - cheeseX, mouseY - cheeseY);
+    trailCounter++;
+    if (dist > 3 && trailCounter % TRAIL_INTERVAL === 0) spawnTrail(cheeseX, cheeseY);
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
