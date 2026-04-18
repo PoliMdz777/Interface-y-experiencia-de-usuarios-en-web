@@ -385,33 +385,6 @@ function closeOnboarding() {
 // ═══════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════
-function renderDashboard() {
-  const ordersEl = document.getElementById('recent-orders');
-  ordersEl.innerHTML = RECENT_ORDERS.map(o => `
-    <div class="dash-order">
-      <div class="dash-order-emoji">${o.emoji}</div>
-      <div class="dash-order-info">
-        <div class="dash-order-name">${o.name}</div>
-        <div class="dash-order-meta">${o.date}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-        <div class="dash-order-price">${o.price}</div>
-        <span class="dash-order-badge badge-${o.status}">${o.status==='delivered'?'✓ Entregado':o.status==='transit'?'🚚 En camino':'⏳ Pendiente'}</span>
-      </div>
-    </div>`).join('');
-  const topEl = document.getElementById('top-products');
-  topEl.innerHTML = TOP_PRODUCTS.map((p,i) => `
-    <div class="dash-featured-item">
-      <div class="dash-featured-rank">#${i+1}</div>
-      <div class="dash-featured-emoji">${p.emoji}</div>
-      <div class="dash-featured-info">
-        <div class="dash-featured-name">${p.name}</div>
-        <div class="dash-featured-sold">${p.sold} este mes</div>
-      </div>
-    </div>`).join('');
-  // Animate stats
-  animateCounter('stat-orders', 0, 142, 1200);
-}
 function animateCounter(id, from, to, dur) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -1005,10 +978,12 @@ function toggleMenu() {
   btn.setAttribute('aria-expanded', String(isOpen));
   btn.setAttribute('aria-label', isOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación');
 }
-document.querySelectorAll('#nav-links a').forEach(a => {
-  a.addEventListener('click', () => {
-    document.getElementById('nav-links').classList.remove('open');
-    document.getElementById('hamburger-btn').setAttribute('aria-expanded', 'false');
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('#nav-links a').forEach(a => {
+    a.addEventListener('click', () => {
+      document.getElementById('nav-links').classList.remove('open');
+      document.getElementById('hamburger-btn').setAttribute('aria-expanded', 'false');
+    });
   });
 });
 
