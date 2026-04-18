@@ -1005,12 +1005,10 @@ function toggleMenu() {
   btn.setAttribute('aria-expanded', String(isOpen));
   btn.setAttribute('aria-label', isOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación');
 }
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('#nav-links a').forEach(a => {
-    a.addEventListener('click', () => {
-      document.getElementById('nav-links').classList.remove('open');
-      document.getElementById('hamburger-btn').setAttribute('aria-expanded', 'false');
-    });
+document.querySelectorAll('#nav-links a').forEach(a => {
+  a.addEventListener('click', () => {
+    document.getElementById('nav-links').classList.remove('open');
+    document.getElementById('hamburger-btn').setAttribute('aria-expanded', 'false');
   });
 });
 
