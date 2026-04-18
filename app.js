@@ -415,14 +415,27 @@ function renderDashboard() {
 function animateCounter(id, from, to, dur) {
   const el = document.getElementById(id);
   if (!el) return;
-@@ -1005,468 +978,470 @@
-  btn.setAttribute('aria-expanded', String(isOpen));
-  btn.setAttribute('aria-label', isOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación');
+  const start = performance.now();
+  function step(now) {
+    const progress = Math.min((now - start) / dur, 1);
+    el.textContent = Math.round(from + (to - from) * progress);
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
-document.querySelectorAll('#nav-links a').forEach(a => {
-  a.addEventListener('click', () => {
-    document.getElementById('nav-links').classList.remove('open');
-    document.getElementById('hamburger-btn').setAttribute('aria-expanded', 'false');
+
+
+
+    function toggleMenu() {
+  const links = document.getElementById('nav-links');
+  const btn   = document.getElementById('hamburger-btn');
+  const isOpen = links.classList.toggle('open');
+  btn.setAttribute('aria-expanded', String(isOpen));
+  btn.setAttribute('aria-label', isOpen
+    ? 'Cerrar menú de navegación'
+    : 'Abrir menú de navegación');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('#nav-links a').forEach(a => {
     a.addEventListener('click', () => {
@@ -431,7 +444,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
-
 // ═══════════════════════════════════════════
 // FORMS
 // ═══════════════════════════════════════════
