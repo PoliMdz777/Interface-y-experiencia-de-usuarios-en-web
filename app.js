@@ -64,6 +64,7 @@ let currentCat = 'all';
 let maxPrice = 110;
 let searchQuery = '';
 let sortBy = 'default';
+let wishlist = new Set();
 
 // ═══════════════════════════════════════════
 // LANGUAGE SYSTEM
@@ -72,49 +73,29 @@ let currentLang = localStorage.getItem('lang') || 'es';
 
 const TRANSLATIONS = {
   es: {
-    nav_accessibility: 'Accesibilidad',
-    nav_account: 'Mi cuenta',
-    nav_dashboard: 'Dashboard',
-    nav_catalog: 'Catálogo',
-    nav_story: 'Nuestra Historia',
-    nav_cafe: 'Café & Sala',
-    nav_delivery: 'Envíos',
-    nav_contact: 'Contacto',
-    a11y_panel: 'Panel de Accesibilidad',
-    a11y_dark: 'Modo Oscuro',
-    a11y_dark_desc: 'Reduce la fatiga visual',
-    a11y_contrast: 'Alto Contraste',
-    a11y_contrast_desc: 'Mejora la legibilidad',
-    a11y_spacing: 'Espaciado de Texto',
-    a11y_spacing_desc: 'Ajusta la separación',
-    spacing_normal: 'Normal',
-    spacing_wide: 'Amplio',
-    spacing_extra: 'Extra',
-    a11y_lang: 'Idioma',
-    a11y_lang_desc: 'Cambia el idioma del sitio',
+    nav_accessibility: 'Accesibilidad', nav_account: 'Mi cuenta',
+    nav_dashboard: 'Dashboard', nav_catalog: 'Catálogo',
+    nav_story: 'Nuestra Historia', nav_cafe: 'Café & Sala',
+    nav_delivery: 'Envíos', nav_contact: 'Contacto',
+    a11y_panel: 'Panel de Accesibilidad', a11y_dark: 'Modo Oscuro',
+    a11y_dark_desc: 'Reduce la fatiga visual', a11y_contrast: 'Alto Contraste',
+    a11y_contrast_desc: 'Mejora la legibilidad', a11y_spacing: 'Espaciado de Texto',
+    a11y_spacing_desc: 'Ajusta la separación', spacing_normal: 'Normal',
+    spacing_wide: 'Amplio', spacing_extra: 'Extra',
+    a11y_lang: 'Idioma', a11y_lang_desc: 'Cambia el idioma del sitio',
     a11y_autosave: 'Tus preferencias se guardan automáticamente',
   },
   en: {
-    nav_accessibility: 'Accessibility',
-    nav_account: 'My account',
-    nav_dashboard: 'Dashboard',
-    nav_catalog: 'Catalogue',
-    nav_story: 'Our Story',
-    nav_cafe: 'Café & Room',
-    nav_delivery: 'Delivery',
-    nav_contact: 'Contact',
-    a11y_panel: 'Accessibility Panel',
-    a11y_dark: 'Dark Mode',
-    a11y_dark_desc: 'Reduces eye strain',
-    a11y_contrast: 'High Contrast',
-    a11y_contrast_desc: 'Improves readability',
-    a11y_spacing: 'Text Spacing',
-    a11y_spacing_desc: 'Adjust text separation',
-    spacing_normal: 'Normal',
-    spacing_wide: 'Wide',
-    spacing_extra: 'Extra',
-    a11y_lang: 'Language',
-    a11y_lang_desc: 'Change the site language',
+    nav_accessibility: 'Accessibility', nav_account: 'My account',
+    nav_dashboard: 'Dashboard', nav_catalog: 'Catalogue',
+    nav_story: 'Our Story', nav_cafe: 'Café & Room',
+    nav_delivery: 'Delivery', nav_contact: 'Contact',
+    a11y_panel: 'Accessibility Panel', a11y_dark: 'Dark Mode',
+    a11y_dark_desc: 'Reduces eye strain', a11y_contrast: 'High Contrast',
+    a11y_contrast_desc: 'Improves readability', a11y_spacing: 'Text Spacing',
+    a11y_spacing_desc: 'Adjust text separation', spacing_normal: 'Normal',
+    spacing_wide: 'Wide', spacing_extra: 'Extra',
+    a11y_lang: 'Language', a11y_lang_desc: 'Change the site language',
     a11y_autosave: 'Your preferences are saved automatically',
   }
 };
@@ -171,25 +152,29 @@ function toggleTheme() {
   const isDark = html.getAttribute('data-theme') === 'dark';
   html.setAttribute('data-theme', isDark ? 'light' : 'dark');
   const btn = document.getElementById('theme-btn');
-  btn.setAttribute('aria-pressed', String(!isDark));
-  btn.classList.toggle('active', !isDark);
+  if (btn) {
+    btn.setAttribute('aria-pressed', String(!isDark));
+    btn.classList.toggle('active', !isDark);
+  }
   localStorage.setItem('theme', isDark ? 'light' : 'dark');
-  toast(isDark ? (currentLang==='en'?'Light mode activated':'Modo claro activado') : (currentLang==='en'?'Dark mode activated':'Modo oscuro activado'));
+  toast(isDark ? 'Modo claro activado' : 'Modo oscuro activado');
 }
 
 function toggleHighContrast() {
   highContrast = !highContrast;
   document.documentElement.classList.toggle('high-contrast', highContrast);
   const btn = document.getElementById('contrast-btn');
-  btn.setAttribute('aria-pressed', String(highContrast));
-  btn.classList.toggle('active', highContrast);
+  if (btn) {
+    btn.setAttribute('aria-pressed', String(highContrast));
+    btn.classList.toggle('active', highContrast);
+  }
   if (highContrast) {
     document.documentElement.style.setProperty('--gold', '#ffd700');
   } else {
     document.documentElement.style.removeProperty('--gold');
   }
   localStorage.setItem('highContrast', String(highContrast));
-  toast(highContrast ? (currentLang==='en'?'High contrast on':'Alto contraste activado') : (currentLang==='en'?'Normal contrast':'Contraste normal'));
+  toast(highContrast ? 'Alto contraste activado' : 'Contraste normal');
 }
 
 function setSpacing(level, btn) {
@@ -201,21 +186,11 @@ function setSpacing(level, btn) {
   localStorage.setItem('spacing', level);
 }
 
-function changeFontSize(dir) {
-  // kept for backward compat
-}
-function toggleSpacing() {
-  // kept for backward compat — now setSpacing handles this
-}
-
-// ═══════════════════════════════════════════
-// FONT SIZE CONTROL
-// ═══════════════════════════════════════════
 function setFontSize(size, btn) {
   const html = document.documentElement;
   html.setAttribute('data-font', size);
   const scales = { small: 0.9, normal: 1, large: 1.25 };
-  html.style.fontSize = `calc(16px * ${scales[size]})`;
+  html.style.fontSize = 'calc(16px * ' + scales[size] + ')';
   document.querySelectorAll('#font-sm,#font-md,#font-lg').forEach(b => {
     b.classList.remove('active');
     b.setAttribute('aria-pressed', 'false');
@@ -226,9 +201,6 @@ function setFontSize(size, btn) {
   toast('🔡 ' + (labels[size] || 'Tamaño ajustado'));
 }
 
-// ═══════════════════════════════════════════
-// REDUCED MOTION TOGGLE
-// ═══════════════════════════════════════════
 let reducedMotion = localStorage.getItem('reducedMotion') === 'true';
 
 function toggleReducedMotion() {
@@ -270,6 +242,61 @@ function initScrollNav() {
   }, { passive: true });
 }
 
+// ═══════════════════════════════════════════
+// CHEESE CURSOR (index page)
+// ═══════════════════════════════════════════
+function initIndexCursor() {
+  const fog    = document.getElementById('index-cursor-fog');
+  const cheese = document.getElementById('index-cursor-cheese');
+  if (!cheese) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (fog) fog.style.display = 'none';
+    cheese.style.display = 'none';
+    return;
+  }
+  document.body.classList.add('cursor-active');
+  let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+  let fogX = mouseX, fogY = mouseY, cheeseX = mouseX, cheeseY = mouseY;
+  let trailCounter = 0;
+
+  document.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+  document.addEventListener('mouseleave', () => {
+    if (fog) fog.style.opacity = '0';
+    cheese.style.opacity = '0';
+  });
+  document.addEventListener('mouseenter', () => {
+    if (fog) fog.style.opacity = '1';
+    cheese.style.opacity = '1';
+  });
+  document.addEventListener('mousedown', () => cheese.classList.add('clicking'));
+  document.addEventListener('mouseup',   () => cheese.classList.remove('clicking'));
+
+  function spawnTrail(x, y) {
+    const dot = document.createElement('div');
+    dot.className = 'index-cursor-trail';
+    dot.style.left = x + 'px';
+    dot.style.top  = y + 'px';
+    document.body.appendChild(dot);
+    setTimeout(() => dot.remove(), 500);
+  }
+
+  (function animate() {
+    if (fog) {
+      fogX += (mouseX - fogX) * 0.09;
+      fogY += (mouseY - fogY) * 0.09;
+      fog.style.left = fogX + 'px';
+      fog.style.top  = fogY + 'px';
+    }
+    cheeseX += (mouseX - cheeseX) * 0.18;
+    cheeseY += (mouseY - cheeseY) * 0.18;
+    cheese.style.left = cheeseX + 'px';
+    cheese.style.top  = cheeseY + 'px';
+    trailCounter++;
+    const dist = Math.hypot(mouseX - cheeseX, mouseY - cheeseY);
+    if (dist > 3 && trailCounter % 4 === 0) spawnTrail(cheeseX, cheeseY);
+    requestAnimationFrame(animate);
+  })();
+}
 
 // ═══════════════════════════════════════════
 // INIT
@@ -300,7 +327,7 @@ function init() {
 
   // Restore spacing
   const savedSpacing = localStorage.getItem('spacing') || 'normal';
-  const spacingBtn = document.getElementById(`spacing-${savedSpacing}`);
+  const spacingBtn = document.getElementById('spacing-' + savedSpacing);
   if (spacingBtn) setSpacing(savedSpacing, spacingBtn);
 
   // Restore font size
@@ -320,50 +347,73 @@ function init() {
   // Restore language
   const savedLang = localStorage.getItem('lang') || 'es';
   currentLang = savedLang;
-  const langBtn = document.getElementById(`lang-${savedLang}`);
-  if (langBtn) { langBtn.classList.add('active'); langBtn.setAttribute('aria-pressed','true'); }
+  const langBtn = document.getElementById('lang-' + savedLang);
+  if (langBtn) { langBtn.classList.add('active'); langBtn.setAttribute('aria-pressed', 'true'); }
   const otherLang = savedLang === 'es' ? 'en' : 'es';
-  const otherBtn = document.getElementById(`lang-${otherLang}`);
-  if (otherBtn) { otherBtn.classList.remove('active'); otherBtn.setAttribute('aria-pressed','false'); }
+  const otherBtn = document.getElementById('lang-' + otherLang);
+  if (otherBtn) { otherBtn.classList.remove('active'); otherBtn.setAttribute('aria-pressed', 'false'); }
   applyTranslations(savedLang);
 
-  // Accessibility modal close on Escape
-  document.getElementById('a11y-modal-overlay')?.addEventListener('click', closeA11yModal);
+  // A11y modal
+  const a11yOverlay = document.getElementById('a11y-modal-overlay');
+  if (a11yOverlay) a11yOverlay.addEventListener('click', closeA11yModal);
 
   // Onboarding
   const seen = sessionStorage.getItem('onboarding-seen');
-  if (seen) { document.getElementById('onboarding').classList.add('hidden'); }
-  else { document.getElementById('onboarding').querySelector('.onboarding-modal').focus?.(); }
+  const ob = document.getElementById('onboarding');
+  if (ob) {
+    if (seen) { ob.classList.add('hidden'); }
+  }
 
-  // Populate dashboard
+  // Dashboard
   renderDashboard();
-  // Render catalog
+
+  // Catalog
   renderProducts();
   updateCounts();
   renderPagination();
+
   // Scroll reveal
   initReveal();
+
   // Scroll-hide navbar
   initScrollNav();
+
   // Range input style
   updateRangeStyle();
-  // Keyboard: close modal with Escape
+
+  // Cheese cursor
+  initIndexCursor();
+
+  // Keyboard shortcuts
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      if (document.getElementById('a11y-modal-overlay')?.classList.contains('open')) { closeA11yPanel(); return; }
-      if (!document.getElementById('product-modal').classList.contains('modal-overlay') || document.getElementById('product-modal').classList.contains('open')) closeModal();
-      if (document.getElementById('cart-sidebar').classList.contains('open')) closeCart();
-      if (!document.getElementById('onboarding').classList.contains('hidden')) closeOnboarding();
+      if (document.getElementById('a11y-modal-overlay') &&
+          document.getElementById('a11y-modal-overlay').classList.contains('open')) {
+        closeA11yPanel(); return;
+      }
+      const pm = document.getElementById('product-modal');
+      if (pm && pm.classList.contains('open')) { closeModal(); return; }
+      if (document.getElementById('cart-sidebar') &&
+          document.getElementById('cart-sidebar').classList.contains('open')) {
+        closeCart(); return;
+      }
+      if (ob && !ob.classList.contains('hidden')) closeOnboarding();
     }
-    if (e.key === 'Tab' && document.getElementById('product-modal').classList.contains('open')) {
-      trapFocus(e, document.getElementById('modal-inner'));
+    if (e.key === 'Tab') {
+      const pm = document.getElementById('product-modal');
+      if (pm && pm.classList.contains('open')) {
+        trapFocus(e, document.getElementById('modal-inner'));
+      }
     }
   });
 }
 
 function trapFocus(e, container) {
+  if (!container) return;
   const focusable = container.querySelectorAll('button,input,select,textarea,[tabindex]:not([tabindex="-1"])');
-  const first = focusable[0], last = focusable[focusable.length-1];
+  if (!focusable.length) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
   if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
   else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
 }
@@ -373,349 +423,20 @@ function trapFocus(e, container) {
 // ═══════════════════════════════════════════
 function nextStep(n) {
   document.querySelectorAll('.onboarding-step').forEach(s => s.classList.remove('active'));
-  const step = document.getElementById(`step-${n}`);
-  if (step) { step.classList.add('active'); step.querySelector('button')?.focus(); }
+  const step = document.getElementById('step-' + n);
+  if (step) { step.classList.add('active'); const btn = step.querySelector('button'); if (btn) btn.focus(); }
 }
+
 function closeOnboarding() {
-  document.getElementById('onboarding').classList.add('hidden');
+  const ob = document.getElementById('onboarding');
+  if (ob) ob.classList.add('hidden');
   sessionStorage.setItem('onboarding-seen', '1');
-  document.getElementById('main-content').focus?.() || document.querySelector('nav').focus();
+  const mc = document.getElementById('main-content');
+  if (mc) mc.focus();
 }
 
 // ═══════════════════════════════════════════
 // DASHBOARD
-// ═══════════════════════════════════════════
-function renderDashboard() {
-  const ordersEl = document.getElementById('recent-orders');
-  ordersEl.innerHTML = RECENT_ORDERS.map(o => `
-    <div class="dash-order">
-      <div class="dash-order-emoji">${o.emoji}</div>
-      <div class="dash-order-info">
-        <div class="dash-order-name">${o.name}</div>
-        <div class="dash-order-meta">${o.date}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-        <div class="dash-order-price">${o.price}</div>
-        <span class="dash-order-badge badge-${o.status}">${o.status==='delivered'?'✓ Entregado':o.status==='transit'?'🚚 En camino':'⏳ Pendiente'}</span>
-      </div>
-    </div>`).join('');
-  const topEl = document.getElementById('top-products');
-  topEl.innerHTML = TOP_PRODUCTS.map((p,i) => `
-    <div class="dash-featured-item">
-      <div class="dash-featured-rank">#${i+1}</div>
-      <div class="dash-featured-emoji">${p.emoji}</div>
-      <div class="dash-featured-info">
-        <div class="dash-featured-name">${p.name}</div>
-        <div class="dash-featured-sold">${p.sold} este mes</div>
-      </div>
-    </div>`).join('');
-  // Animate stats
-  animateCounter('stat-orders', 0, 142, 1200);
-}
-function animateCounter(id, from, to, dur) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const start = performance.now();
-  function step(now) {
-    const progress = Math.min((now - start) / dur, 1);
-    el.textContent = Math.round(from + (to - from) * progress);
-    if (progress < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-
-
-
-    function toggleMenu() {
-  const links = document.getElementById('nav-links');
-  const btn   = document.getElementById('hamburger-btn');
-  const isOpen = links.classList.toggle('open');
-  btn.setAttribute('aria-expanded', String(isOpen));
-  btn.setAttribute('aria-label', isOpen
-    ? 'Cerrar menú de navegación'
-    : 'Abrir menú de navegación');
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('#nav-links a').forEach(a => {
-    a.addEventListener('click', () => {
-      document.getElementById('nav-links').classList.remove('open');
-      document.getElementById('hamburger-btn').setAttribute('aria-expanded', 'false');
-    });
-  });
-});
-// ═══════════════════════════════════════════
-// FORMS
-// ═══════════════════════════════════════════
-function validateField(input) {
-  const id = input.id;
-  const hint = document.getElementById(`${id}-hint`);
-  if (!hint) return true;
-  let error = '';
-  if (input.required && !input.value.trim()) {
-    error = 'Este campo es obligatorio.';
-  } else if (input.type === 'email' && input.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value)) {
-    error = 'Introduce un email válido.';
-  } else if (input.value.trim().length > 0 && input.minLength && input.value.length < input.minLength) {
-    error = `Mínimo ${input.minLength} caracteres.`;
-  }
-  if (error) {
-    input.classList.add('error'); input.classList.remove('success');
-    hint.innerHTML = `<span class="hint-error">⚠ ${error}</span>`;
-    input.setAttribute('aria-invalid', 'true');
-  } else if (input.value.trim()) {
-    input.classList.remove('error'); input.classList.add('success');
-    hint.innerHTML = `<span class="hint-success">✓ Correcto</span>`;
-    input.setAttribute('aria-invalid', 'false');
-  } else {
-    input.classList.remove('error','success');
-    hint.innerHTML = '';
-    input.removeAttribute('aria-invalid');
-  }
-  return !error;
-}
-function handleFormSubmit(e) {
-  e.preventDefault();
-  const fields = ['fname','lname','email','address'];
-  let valid = true;
-  fields.forEach(id => {
-    const el = document.getElementById(id);
-    if (!validateField(el)) valid = false;
-  });
-  if (!valid) {
-    toast('Por favor corrige los errores del formulario.', 'error');
-    document.querySelector('.form-input.error')?.focus();
-    return;
-  }
-  const btn = document.getElementById('submit-btn');
-  const btnText = document.getElementById('btn-text');
-  btn.disabled = true;
-  btn.classList.add('loading');
-  btnText.textContent = 'Enviando...';
-  setTimeout(() => {
-    btn.classList.remove('loading');
-    btn.classList.add('sent');
-    btnText.textContent = '✅ Pedido enviado';
-    toast('¡Pedido enviado con éxito! Te contactaremos pronto.', 'success');
-    setTimeout(() => {
-      btn.disabled = false;
-      btn.classList.remove('sent');
-      btnText.textContent = 'Enviar Pedido';
-      document.getElementById('order-form').reset();
-      ['fname','lname','email','address'].forEach(id => {
-        const el = document.getElementById(id);
-        el.classList.remove('success','error');
-        const hint = document.getElementById(`${id}-hint`);
-        if(hint) hint.innerHTML = '';
-      });
-    }, 3000);
-  }, 1800);
-}
-function handleNewsletter(e) {
-  e.preventDefault();
-  const input = document.getElementById('newsletter-email');
-  if (!input.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value)) {
-    input.style.borderColor = 'var(--error)';
-    toast('Introduce un email válido.', 'error');
-    input.focus();
-    setTimeout(() => input.style.borderColor = '', 2000);
-    return;
-  }
-  const btn = e.target.querySelector('button');
-  btn.textContent = '✅ ¡Suscrito!';
-  btn.style.background = 'var(--success)';
-  input.value = '';
-  toast('¡Suscripción confirmada!', 'success');
-  setTimeout(() => {
-    btn.textContent = 'Suscribirse →';
-    btn.style.background = '';
-  }, 3000);
-}
-
-// ═══════════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════════
-function toast(msg, type = '') {
-  const container = document.getElementById('toast-container');
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.textContent = msg;
-  el.setAttribute('role', 'alert');
-  container.appendChild(el);
-  setTimeout(() => {
-    el.classList.add('out');
-    setTimeout(() => el.remove(), 350);
-  }, 2800);
-}
-
-// ═══════════════════════════════════════════
-// SCROLL REVEAL
-// ═══════════════════════════════════════════
-let revealObserver;
-function initReveal() {
-  revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.12 });
-  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
-}
-
-// ═══════════════════════════════════════════
-// INIT ON DOM READY
-// ═══════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', init);
-// ═══════════════════════════════════════════
-// PRODUCT PICKER — Contact form dynamic combobox
-// ═══════════════════════════════════════════
-let pickerSelection = {}; // { productId: {product, qty} }
-
-function renderProductPicker(cat) {
-  var wrap = document.getElementById('product-picker-wrap');
-  if (!wrap) return;
-  if (!cat) { wrap.innerHTML = ''; updatePickerSummary(); return; }
-
-  var items = PRODUCTS.filter(function(p) { return p.cat === cat; });
-  if (!items.length) {
-    wrap.innerHTML = '<p style="font-family:Josefin Sans,sans-serif;font-size:11px;color:var(--text-secondary);padding:10px 0;">Sin productos en esta categoria.</p>';
-    return;
-  }
-
-  var countLabel = items.length + ' producto' + (items.length !== 1 ? 's' : '');
-  var rows = '';
-  for (var i = 0; i < items.length; i++) {
-    var p = items[i];
-    var sel = pickerSelection[p.id];
-    var qty = sel ? sel.qty : 0;
-    var qtyControls = '';
-    if (sel) {
-      qtyControls = '<button class="picker-qty-btn" onclick="changePickerQty(' + p.id + ',-1)">−</button>' +
-        '<span class="picker-qty-num">' + qty + '</span>' +
-        '<button class="picker-qty-btn" onclick="changePickerQty(' + p.id + ',1)">+</button>';
-    } else {
-      qtyControls = '<button class="picker-qty-btn" onclick="togglePickerItem(' + p.id + ')" style="width:auto;padding:0 10px;border-radius:12px;font-size:11px;">+ Añadir</button>';
-    }
-    rows += '<div class="product-picker-item' + (sel ? ' selected' : '') + '" role="option" aria-selected="' + (sel ? 'true' : 'false') + '">' +
-      '<span class="picker-item-emoji" aria-hidden="true">' + p.emoji + '</span>' +
-      '<div class="picker-item-info">' +
-        '<div class="picker-item-name">' + p.name + '</div>' +
-        '<div class="picker-item-origin">📍 ' + p.origin + ' · ' + p.weight + '</div>' +
-      '</div>' +
-      '<span class="picker-item-price">£' + p.price.toFixed(2) + '</span>' +
-      '<div class="picker-item-qty-wrap" onclick="event.stopPropagation()">' + qtyControls + '</div>' +
-    '</div>';
-  }
-
-  wrap.innerHTML =
-    '<div class="product-picker" id="product-picker" role="listbox" aria-multiselectable="true">' +
-      '<div class="product-picker-header">Selecciona y ajusta cantidad <span class="product-picker-count">' + countLabel + '</span></div>' +
-      '<div class="product-picker-list">' + rows + '</div>' +
-    '</div>';
-}
-
-function togglePickerItem(productId) {
-  const product = PRODUCTS.find(p => p.id === productId);
-  if (!product) return;
-
-  if (pickerSelection[productId]) {
-    delete pickerSelection[productId];
-    toast(`${product.emoji} ${product.name} quitado del pedido`);
-  } else {
-    pickerSelection[productId] = { product, qty: 1 };
-    toast(`✓ ${product.name} añadido al pedido`, 'success');
-  }
-
-  // Refresh picker items (keep category)
-  const cat = document.getElementById('category')?.value;
-  if (cat) renderProductPicker(cat);
-
-  updatePickerSummary();
-  // Auto-fill the message field with selected products
-  autoFillOrderMessage();
-}
-
-function changePickerQty(productId, dir) {
-  var sel = pickerSelection[productId];
-  if (!sel) { togglePickerItem(productId); return; }
-  var newQty = sel.qty + dir;
-  if (newQty <= 0) {
-    delete pickerSelection[productId];
-    toast(sel.product.emoji + ' ' + sel.product.name + ' quitado del pedido');
-  } else {
-    sel.qty = Math.min(newQty, 20);
-  }
-  var cat = document.getElementById('category') ? document.getElementById('category').value : '';
-  if (cat) renderProductPicker(cat);
-  updatePickerSummary();
-  autoFillOrderMessage();
-}
-
-function updatePickerSummary() {
-  var wrap = document.getElementById('picker-selected-wrap');
-  var list = document.getElementById('picker-selected-list');
-  var totalEl = document.getElementById('picker-total');
-  if (!wrap || !list || !totalEl) return;
-
-  var selected = Object.values(pickerSelection);
-  if (!selected.length) { wrap.classList.remove('visible'); return; }
-
-  wrap.classList.add('visible');
-  var total = 0;
-  var itemsHtml = '';
-  for (var i = 0; i < selected.length; i++) {
-    var s = selected[i];
-    var subtotal = s.product.price * s.qty;
-    total += subtotal;
-    itemsHtml += '<li class="picker-selected-item">' +
-      '<span>' + s.product.emoji + ' ' + s.product.name +
-        '<span style="color:var(--text-secondary);font-size:10px;"> x' + s.qty + ' — £' + subtotal.toFixed(2) + '</span>' +
-      '</span>' +
-      '<div style="display:flex;align-items:center;gap:4px;">' +
-        '<button class="picker-qty-btn" onclick="changePickerQty(' + s.product.id + ',-1)" style="width:20px;height:20px;font-size:12px;">−</button>' +
-        '<span class="picker-qty-num" style="font-size:12px;">' + s.qty + '</span>' +
-        '<button class="picker-qty-btn" onclick="changePickerQty(' + s.product.id + ',1)" style="width:20px;height:20px;font-size:12px;">+</button>' +
-        '<button class="picker-remove-btn" onclick="togglePickerItem(' + s.product.id + ')" aria-label="Quitar">✕</button>' +
-      '</div>' +
-    '</li>';
-  }
-  list.innerHTML = itemsHtml;
-
-  var freeMsg = total >= 40
-    ? '(envio gratis incluido)'
-    : '(+ £4.99 envio si pedido < £40)';
-  totalEl.innerHTML = 'Total estimado: <strong>£' + total.toFixed(2) + '</strong> <span style="font-size:9px;color:var(--text-secondary);margin-left:4px;">' + freeMsg + '</span>';
-}
-
-function autoFillOrderMessage() {
-  const msgEl = document.getElementById('message');
-  if (!msgEl || msgEl.dataset.manuallyEdited) return;
-  const selected = Object.values(pickerSelection);
-  if (!selected.length) { msgEl.value = ''; return; }
-  var lines = [];
-  for (var i = 0; i < selected.length; i++) {
-    var s = selected[i];
-    lines.push('• ' + s.product.name + ' x' + s.qty +
-      ' (' + s.product.weight + ' c/u) — £' + (s.product.price * s.qty).toFixed(2));
-  }
-  var total = 0;
-  for (var j = 0; j < selected.length; j++) total += selected[j].product.price * selected[j].qty;
-  var shipping = total >= 40 ? 'Envio gratis' : 'Envio £4.99';
-  msgEl.value = 'Me gustaria pedir los siguientes productos:' + String.fromCharCode(10) +
-    lines.join(String.fromCharCode(10)) + String.fromCharCode(10) + String.fromCharCode(10) +
-    'Subtotal: £' + total.toFixed(2) + ' - ' + shipping;
-}
-
-// Mark message as manually edited when user types
-document.addEventListener('DOMContentLoaded', () => {
-  const msgEl = document.getElementById('message');
-  if (msgEl) msgEl.addEventListener('input', () => { msgEl.dataset.manuallyEdited = '1'; });
-});
-
-// ═══════════════════════════════════════════
-// LIVE ORDER HISTORY — session-based, real-time
 // ═══════════════════════════════════════════
 var liveOrders = RECENT_ORDERS.slice();
 var liveOrderCount = 142;
@@ -732,104 +453,11 @@ function formatOrderTime(timestamp) {
   var now = new Date();
   var diff = Math.floor((now - timestamp) / 1000);
   if (diff < 60)    return 'Hace unos segundos';
-  if (diff < 3600)  return 'Hace ' + Math.floor(diff/60) + ' min';
-  if (diff < 86400) return 'Hace ' + Math.floor(diff/3600) + 'h';
-  return timestamp.toLocaleDateString('es-ES', { day:'numeric', month:'short' });
+  if (diff < 3600)  return 'Hace ' + Math.floor(diff / 60) + ' min';
+  if (diff < 86400) return 'Hace ' + Math.floor(diff / 3600) + 'h';
+  return timestamp.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
-function addLiveOrder(orderId, cartSnapshot, grandTotal) {
-  var topItem = cartSnapshot[0];
-  var itemCount = 0;
-  for (var i = 0; i < cartSnapshot.length; i++) itemCount += cartSnapshot[i].qty;
-  var now = new Date();
-  var name;
-  if (itemCount === 1 && cartSnapshot.length === 1) {
-    name = topItem.name;
-  } else if (cartSnapshot.length === 1) {
-    name = topItem.name + ' x' + topItem.qty;
-  } else {
-    name = topItem.name + ' + ' + (cartSnapshot.length - 1) + ' producto' + (cartSnapshot.length > 2 ? 's' : '') + ' mas';
-  }
-
-  var newOrder = {
-    name: name,
-    emoji: topItem.emoji,
-    date: 'Hace unos segundos',
-    price: '£' + grandTotal,
-    status: 'pending',
-    id: orderId,
-    isNew: true,
-    timestamp: now,
-    items: cartSnapshot.map(function(i) {
-      return { name: i.name, qty: i.qty, price: i.price, emoji: i.emoji };
-    })
-  };
-
-  liveOrders.unshift(newOrder);
-  if (liveOrders.length > 10) liveOrders.pop();
-  liveOrderCount++;
-  newOrdersCount++;
-
-  var statEl = document.getElementById('stat-orders');
-  if (statEl) {
-    statEl.textContent = liveOrderCount;
-    statEl.classList.add('stat-bump');
-    setTimeout(function() { statEl.classList.remove('stat-bump'); }, 600);
-  }
-
-  renderDashboard();
-
-  var toastContainer = document.getElementById('toast-container');
-  if (toastContainer) {
-    var el = document.createElement('div');
-    el.className = 'toast success';
-    el.innerHTML = '✅ Pedido <strong>#' + orderId + '</strong> · <a onclick="scrollToDashboard()" class="toast-action" style="cursor:pointer;">Ver en Dashboard →</a>';
-    el.setAttribute('role', 'alert');
-    toastContainer.appendChild(el);
-    setTimeout(function() { el.classList.add('out'); setTimeout(function() { el.remove(); }, 350); }, 5000);
-  }
-
-  setTimeout(function() { updateOrderStatus(orderId, 'transit'); }, 60000);
-  setTimeout(function() { updateOrderStatus(orderId, 'delivered'); }, 180000);
-}
-
-function updateOrderStatus(orderId, newStatus) {
-  var order = null;
-  for (var i = 0; i < liveOrders.length; i++) {
-    if (liveOrders[i].id === orderId) { order = liveOrders[i]; break; }
-  }
-  if (!order || order.status === 'delivered') return;
-  order.status = newStatus;
-  if (order.timestamp) order.date = formatOrderTime(order.timestamp);
-  renderDashboard();
-  var labels = { transit: '🚚 Tu pedido esta en camino', delivered: '✅ Tu pedido ha sido entregado' };
-  if (labels[newStatus]) toast(labels[newStatus] + ' — #' + orderId, newStatus === 'delivered' ? 'success' : '');
-}
-
-function scrollToDashboard() {
-  var el = document.getElementById('dashboard');
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function cycleOrderStatus(orderId) {
-  var order = null;
-  for (var i = 0; i < liveOrders.length; i++) {
-    if (liveOrders[i].id === orderId) { order = liveOrders[i]; break; }
-  }
-  if (!order) return;
-  var cycle = { pending: 'transit', transit: 'delivered', delivered: 'pending' };
-  order.status = cycle[order.status] || 'pending';
-  renderDashboard();
-  var st = STATUS_LABELS[order.status];
-  toast('Pedido #' + orderId + ' → ' + st.icon + ' ' + st.text);
-}
-
-// Refresh timestamps every 30s
-setInterval(function() { if (liveOrders.length) renderDashboard(); }, 30000);
-
-// ═══════════════════════════════════════════
-// renderDashboard — uses liveOrders with full detail
-// ═══════════════════════════════════════════
 function renderDashboard() {
   var ordersEl = document.getElementById('recent-orders');
   if (ordersEl) {
@@ -837,7 +465,6 @@ function renderDashboard() {
       var o = liveOrders[i];
       if (o.timestamp) o.date = formatOrderTime(o.timestamp);
     }
-
     var ordersHtml = '';
     for (var j = 0; j < liveOrders.length; j++) {
       var o2 = liveOrders[j];
@@ -870,7 +497,6 @@ function renderDashboard() {
     }
     ordersEl.innerHTML = ordersHtml;
 
-    // New orders badge in panel header
     var header = ordersEl.closest ? ordersEl.closest('.dash-panel') : null;
     if (header) header = header.querySelector('.dash-panel-header');
     if (header) {
@@ -891,7 +517,7 @@ function renderDashboard() {
     for (var m = 0; m < TOP_PRODUCTS.length; m++) {
       var prod = TOP_PRODUCTS[m];
       topHtml += '<div class="dash-featured-item">' +
-        '<div class="dash-featured-rank">#' + (m+1) + '</div>' +
+        '<div class="dash-featured-rank">#' + (m + 1) + '</div>' +
         '<div class="dash-featured-emoji">' + prod.emoji + '</div>' +
         '<div class="dash-featured-info">' +
           '<div class="dash-featured-name">' + prod.name + '</div>' +
@@ -901,4 +527,975 @@ function renderDashboard() {
     }
     topEl.innerHTML = topHtml;
   }
+
+  animateCounter('stat-orders', 0, liveOrderCount, 1200);
 }
+
+function animateCounter(id, from, to, dur) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = performance.now();
+  function step(now) {
+    const progress = Math.min((now - start) / dur, 1);
+    el.textContent = Math.round(from + (to - from) * progress);
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function cycleOrderStatus(orderId) {
+  var order = null;
+  for (var i = 0; i < liveOrders.length; i++) {
+    if (liveOrders[i].id === orderId) { order = liveOrders[i]; break; }
+  }
+  if (!order) return;
+  var cycle = { pending: 'transit', transit: 'delivered', delivered: 'pending' };
+  order.status = cycle[order.status] || 'pending';
+  renderDashboard();
+  var st = STATUS_LABELS[order.status];
+  toast('Pedido #' + orderId + ' → ' + st.icon + ' ' + st.text);
+}
+
+function addLiveOrder(orderId, cartSnapshot, grandTotal) {
+  var topItem = cartSnapshot[0];
+  var itemCount = 0;
+  for (var i = 0; i < cartSnapshot.length; i++) itemCount += cartSnapshot[i].qty;
+  var name = cartSnapshot.length === 1
+    ? (topItem.name + (topItem.qty > 1 ? ' x' + topItem.qty : ''))
+    : (topItem.name + ' + ' + (cartSnapshot.length - 1) + ' más');
+
+  var newOrder = {
+    name: name, emoji: topItem.emoji, date: 'Hace unos segundos',
+    price: '£' + grandTotal, status: 'pending', id: orderId,
+    isNew: true, timestamp: new Date(),
+    items: cartSnapshot.map(function(i) {
+      return { name: i.name, qty: i.qty, price: i.price, emoji: i.emoji };
+    })
+  };
+  liveOrders.unshift(newOrder);
+  if (liveOrders.length > 10) liveOrders.pop();
+  liveOrderCount++;
+  newOrdersCount++;
+
+  var statEl = document.getElementById('stat-orders');
+  if (statEl) {
+    statEl.textContent = liveOrderCount;
+    statEl.classList.add('stat-bump');
+    setTimeout(function() { statEl.classList.remove('stat-bump'); }, 600);
+  }
+  renderDashboard();
+
+  var tc = document.getElementById('toast-container');
+  if (tc) {
+    var el = document.createElement('div');
+    el.className = 'toast success';
+    el.innerHTML = '✅ Pedido <strong>#' + orderId + '</strong> recibido · <a onclick="scrollToDashboard()" class="toast-action" style="cursor:pointer;color:var(--gold-light);text-decoration:underline;">Ver Dashboard →</a>';
+    el.setAttribute('role', 'alert');
+    tc.appendChild(el);
+    setTimeout(function() { el.classList.add('out'); setTimeout(function() { el.remove(); }, 350); }, 5000);
+  }
+
+  setTimeout(function() { updateOrderStatus(orderId, 'transit'); }, 60000);
+  setTimeout(function() { updateOrderStatus(orderId, 'delivered'); }, 180000);
+}
+
+function updateOrderStatus(orderId, newStatus) {
+  var order = null;
+  for (var i = 0; i < liveOrders.length; i++) {
+    if (liveOrders[i].id === orderId) { order = liveOrders[i]; break; }
+  }
+  if (!order || order.status === 'delivered') return;
+  order.status = newStatus;
+  if (order.timestamp) order.date = formatOrderTime(order.timestamp);
+  renderDashboard();
+  var labels = { transit: '🚚 Tu pedido está en camino', delivered: '✅ Tu pedido ha sido entregado' };
+  if (labels[newStatus]) toast(labels[newStatus] + ' — #' + orderId, newStatus === 'delivered' ? 'success' : '');
+}
+
+function scrollToDashboard() {
+  var el = document.getElementById('dashboard');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+setInterval(function() { if (liveOrders.length) renderDashboard(); }, 30000);
+
+// ═══════════════════════════════════════════
+// CATALOG — FILTER & RENDER
+// ═══════════════════════════════════════════
+function applyFilters() {
+  searchQuery = (document.getElementById('search-input') || {}).value || '';
+  sortBy = (document.getElementById('sort-select') || {}).value || 'default';
+
+  filteredProducts = PRODUCTS.filter(p => {
+    const matchCat   = currentCat === 'all' || p.cat === currentCat;
+    const matchPrice = p.price <= maxPrice;
+    const q = searchQuery.toLowerCase().trim();
+    const matchSearch = !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.origin.toLowerCase().includes(q) ||
+      p.desc.toLowerCase().includes(q);
+    return matchCat && matchPrice && matchSearch;
+  });
+
+  // Sort
+  if (sortBy === 'price-asc')  filteredProducts.sort((a, b) => a.price - b.price);
+  if (sortBy === 'price-desc') filteredProducts.sort((a, b) => b.price - a.price);
+  if (sortBy === 'name-asc')   filteredProducts.sort((a, b) => a.name.localeCompare(b.name));
+  if (sortBy === 'name-desc')  filteredProducts.sort((a, b) => b.name.localeCompare(a.name));
+  if (sortBy === 'popular')    filteredProducts.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
+
+  currentPage = 1;
+  renderProducts();
+  updateCounts();
+  renderPagination();
+}
+
+function setCatFilter(cat, btn) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-filter-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true'); }
+  applyFilters();
+}
+
+function updatePriceFilter(input) {
+  maxPrice = parseInt(input.value, 10);
+  document.getElementById('price-display').textContent = '£' + maxPrice;
+  updateRangeStyle();
+  applyFilters();
+}
+
+function updateRangeStyle() {
+  const input = document.getElementById('price-filter');
+  if (!input) return;
+  const pct = ((input.value - input.min) / (input.max - input.min)) * 100;
+  input.style.setProperty('--pct', pct + '%');
+}
+
+function resetFilters() {
+  currentCat = 'all';
+  maxPrice = 110;
+  searchQuery = '';
+  sortBy = 'default';
+  const si = document.getElementById('search-input');
+  if (si) si.value = '';
+  const pf = document.getElementById('price-filter');
+  if (pf) { pf.value = 110; updateRangeStyle(); }
+  document.getElementById('price-display').textContent = '£110';
+  const ss = document.getElementById('sort-select');
+  if (ss) ss.value = 'default';
+  document.querySelectorAll('.cat-filter-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  const allBtn = document.querySelector('[data-cat="all"]');
+  if (allBtn) { allBtn.classList.add('active'); allBtn.setAttribute('aria-pressed', 'true'); }
+  applyFilters();
+  toast('Filtros restablecidos');
+}
+
+function setView(view) {
+  currentView = view;
+  const grid = document.getElementById('products-grid');
+  if (view === 'list') {
+    grid.classList.add('list-view');
+  } else {
+    grid.classList.remove('list-view');
+  }
+  document.getElementById('grid-btn').classList.toggle('active', view === 'grid');
+  document.getElementById('list-btn').classList.toggle('active', view === 'list');
+  document.getElementById('grid-btn').setAttribute('aria-pressed', String(view === 'grid'));
+  document.getElementById('list-btn').setAttribute('aria-pressed', String(view === 'list'));
+}
+
+function updateCounts() {
+  const cats = ['all', 'soft', 'hard', 'blue', 'goat', 'sheep', 'british', 'accompaniment'];
+  cats.forEach(cat => {
+    const el = document.getElementById('count-' + cat);
+    if (!el) return;
+    const count = cat === 'all' ? PRODUCTS.length : PRODUCTS.filter(p => p.cat === cat).length;
+    el.textContent = count;
+  });
+  const showEl = document.getElementById('showing-count');
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageItems = filteredProducts.slice(start, start + PAGE_SIZE);
+  if (showEl) showEl.textContent = pageItems.length;
+  const countEl = document.getElementById('catalog-count');
+  if (countEl) {
+    countEl.innerHTML = 'Mostrando <strong>' + pageItems.length + '</strong> de <strong>' + filteredProducts.length + '</strong> productos';
+  }
+}
+
+// ═══════════════════════════════════════════
+// RENDER PRODUCTS
+// ═══════════════════════════════════════════
+function renderProducts() {
+  const grid = document.getElementById('products-grid');
+  if (!grid) return;
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageItems = filteredProducts.slice(start, start + PAGE_SIZE);
+
+  if (!pageItems.length) {
+    grid.innerHTML = '<div class="no-results">' +
+      '<div class="no-results-icon">🔍</div>' +
+      '<div class="no-results-text">No se encontraron productos</div>' +
+      '<p style="color:var(--text-secondary);font-size:15px;">Prueba con otros filtros o términos de búsqueda.</p>' +
+      '<button onclick="resetFilters()" style="margin-top:16px;padding:10px 24px;background:var(--gold);color:var(--navy);border:none;border-radius:4px;cursor:pointer;font-family:Josefin Sans,sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Limpiar filtros</button>' +
+    '</div>';
+    return;
+  }
+
+  const catBgMap = {
+    soft: 'bg-soft', hard: 'bg-hard', blue: 'bg-blue',
+    goat: 'bg-goat', sheep: 'bg-sheep', british: 'bg-british',
+    accompaniment: 'bg-soft'
+  };
+  const catLabels = {
+    soft: 'Suave', hard: 'Duro', blue: 'Azul', goat: 'Cabra',
+    sheep: 'Oveja', british: 'Británico', accompaniment: 'Acompañamiento'
+  };
+
+  grid.innerHTML = pageItems.map((p, idx) => {
+    const bg = catBgMap[p.cat] || 'bg-soft';
+    const catLabel = catLabels[p.cat] || p.cat;
+    const isWished = wishlist.has(p.id);
+
+    // Badges
+    let badges = '';
+    if (p.badge) {
+      if (p.badge.includes('popular')) badges += '<span class="product-badge badge-popular">Popular</span>';
+      else if (p.badge.includes('new')) badges += '<span class="product-badge badge-new">Nuevo</span>';
+      else if (p.badge.includes('british')) badges += '<span class="product-badge badge-british">🇬🇧 British</span>';
+    }
+
+    return '<article class="product-card" role="listitem" tabindex="0" ' +
+      'onclick="openModal(' + p.id + ')" ' +
+      'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){openModal(' + p.id + ')}" ' +
+      'aria-label="' + p.name + ', £' + p.price.toFixed(2) + '">' +
+      '<div class="product-thumb">' +
+        '<div class="product-img-wrap ' + bg + '">' +
+          '<img class="product-img" src="' + p.img + '" alt="' + p.name + '" loading="lazy" ' +
+            'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+          '<div class="product-emoji-fallback" style="display:none;">' + p.emoji + '</div>' +
+        '</div>' +
+        badges +
+        '<button class="product-wishlist" ' +
+          'onclick="toggleWishlist(event,' + p.id + ')" ' +
+          'aria-label="' + (isWished ? 'Quitar de favoritos' : 'Añadir a favoritos') + '" ' +
+          'aria-pressed="' + isWished + '" ' +
+          'id="wish-' + p.id + '">' +
+          (isWished ? '❤️' : '🤍') +
+        '</button>' +
+      '</div>' +
+      '<div class="product-info">' +
+        '<div class="product-cat">' + catLabel + '</div>' +
+        '<div class="product-name">' + p.name + '</div>' +
+        '<div class="product-origin">📍 ' + p.origin + '</div>' +
+        '<div class="product-desc">' + p.desc + '</div>' +
+        '<div class="product-meta">' +
+          '<span class="product-meta-label">Intensidad</span>' +
+          '<span class="product-meta-value">' + p.intensity + '</span>' +
+          '<span class="product-meta-label">Leche</span>' +
+          '<span class="product-meta-value">' + p.milk + '</span>' +
+          '<span class="product-meta-label">Maduración</span>' +
+          '<span class="product-meta-value">' + p.maturity + '</span>' +
+        '</div>' +
+        '<div class="product-footer">' +
+          '<div class="product-price">£' + p.price.toFixed(2) + '<small>' + p.weight + '</small></div>' +
+          '<button class="product-add-btn" ' +
+            'onclick="event.stopPropagation();addToCart(' + p.id + ',1)" ' +
+            'aria-label="Añadir ' + p.name + ' al carrito">+</button>' +
+        '</div>' +
+      '</div>' +
+    '</article>';
+  }).join('');
+
+  updateCounts();
+}
+
+// ═══════════════════════════════════════════
+// PAGINATION
+// ═══════════════════════════════════════════
+function renderPagination() {
+  const container = document.getElementById('pagination');
+  if (!container) return;
+  const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+  let html = '<button class="page-btn" onclick="goToPage(' + (currentPage - 1) + ')" ' +
+    (currentPage === 1 ? 'disabled' : '') + ' aria-label="Página anterior">‹</button>';
+
+  for (let i = 1; i <= totalPages; i++) {
+    html += '<button class="page-btn' + (i === currentPage ? ' active' : '') + '" ' +
+      'onclick="goToPage(' + i + ')" aria-label="Página ' + i + '" ' +
+      (i === currentPage ? 'aria-current="page"' : '') + '>' + i + '</button>';
+  }
+
+  html += '<button class="page-btn" onclick="goToPage(' + (currentPage + 1) + ')" ' +
+    (currentPage === totalPages ? 'disabled' : '') + ' aria-label="Página siguiente">›</button>';
+
+  container.innerHTML = html;
+}
+
+function goToPage(page) {
+  const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  renderProducts();
+  renderPagination();
+  updateCounts();
+  const catalog = document.getElementById('catalog');
+  if (catalog) catalog.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ═══════════════════════════════════════════
+// PRODUCT MODAL
+// ═══════════════════════════════════════════
+function openModal(productId) {
+  const p = PRODUCTS.find(x => x.id === productId);
+  if (!p) return;
+  currentProduct = p;
+
+  const catBgMap = {
+    soft: '#f5ece0', hard: '#e8d5a0', blue: '#c8d8e8',
+    goat: '#e8e8e0', sheep: '#f0e8d8', british: '#1a3050',
+    accompaniment: '#f0e8d0'
+  };
+  const catLabels = {
+    soft: 'Suave', hard: 'Duro', blue: 'Azul', goat: 'Cabra',
+    sheep: 'Oveja', british: 'Británico', accompaniment: 'Acompañamiento'
+  };
+
+  document.getElementById('modal-emoji').textContent = p.emoji;
+  document.getElementById('modal-img-bg').style.background = catBgMap[p.cat] || '#f5ece0';
+  document.getElementById('modal-cat').textContent = catLabels[p.cat] || p.cat;
+  document.getElementById('modal-origin').textContent = '📍 ' + p.origin;
+  document.getElementById('modal-product-name').textContent = p.name;
+  document.getElementById('modal-tagline').textContent = p.tagline;
+  document.getElementById('modal-desc').textContent = p.desc;
+  document.getElementById('modal-price').textContent = p.price.toFixed(2);
+  document.getElementById('modal-weight-label').textContent = p.weight;
+  document.getElementById('modal-pairing').textContent = p.pairing;
+  document.getElementById('modal-qty').value = 1;
+
+  document.getElementById('modal-attrs').innerHTML =
+    '<div class="modal-attr"><div class="modal-attr-label">Intensidad</div><div class="modal-attr-value">' + p.intensity + '</div></div>' +
+    '<div class="modal-attr"><div class="modal-attr-label">Leche</div><div class="modal-attr-value">' + p.milk + '</div></div>' +
+    '<div class="modal-attr"><div class="modal-attr-label">Maduración</div><div class="modal-attr-value">' + p.maturity + '</div></div>';
+
+  const modal = document.getElementById('product-modal');
+  modal.classList.add('open');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  const addBtn = document.getElementById('modal-add-btn');
+  if (addBtn) { addBtn.classList.remove('added'); addBtn.textContent = '🛒 Añadir al Carrito'; }
+
+  setTimeout(() => {
+    const closeBtn = modal.querySelector('.modal-close');
+    if (closeBtn) closeBtn.focus();
+  }, 50);
+}
+
+function closeModal() {
+  const modal = document.getElementById('product-modal');
+  modal.classList.remove('open');
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+  currentProduct = null;
+}
+
+function handleModalOverlayClick(e) {
+  if (e.target === document.getElementById('product-modal')) closeModal();
+}
+
+function changeQty(dir) {
+  const input = document.getElementById('modal-qty');
+  let val = parseInt(input.value, 10) + dir;
+  if (val < 1) val = 1;
+  if (val > 20) val = 20;
+  input.value = val;
+}
+
+function addToCartFromModal() {
+  if (!currentProduct) return;
+  const qty = parseInt(document.getElementById('modal-qty').value, 10) || 1;
+  addToCart(currentProduct.id, qty);
+  const btn = document.getElementById('modal-add-btn');
+  if (btn) {
+    btn.classList.add('added');
+    btn.textContent = '✅ ¡Añadido!';
+    setTimeout(() => {
+      btn.classList.remove('added');
+      btn.textContent = '🛒 Añadir al Carrito';
+    }, 1500);
+  }
+}
+
+// ═══════════════════════════════════════════
+// CART
+// ═══════════════════════════════════════════
+function addToCart(productId, qty) {
+  qty = qty || 1;
+  const p = PRODUCTS.find(x => x.id === productId);
+  if (!p) return;
+
+  const existing = cart.find(i => i.id === productId);
+  if (existing) {
+    existing.qty = Math.min(existing.qty + qty, 20);
+  } else {
+    cart.push({ id: p.id, name: p.name, price: p.price, weight: p.weight, emoji: p.emoji, img: p.img, qty: qty });
+  }
+
+  updateCartUI();
+  toast(p.emoji + ' ' + p.name + ' añadido al carrito', 'success');
+
+  // Bump count badge
+  const countEl = document.getElementById('cart-count');
+  if (countEl) { countEl.classList.add('bump'); setTimeout(() => countEl.classList.remove('bump'), 300); }
+}
+
+function removeFromCart(productId) {
+  cart = cart.filter(i => i.id !== productId);
+  updateCartUI();
+}
+
+function changeCartQty(productId, dir) {
+  const item = cart.find(i => i.id === productId);
+  if (!item) return;
+  item.qty += dir;
+  if (item.qty <= 0) { removeFromCart(productId); return; }
+  if (item.qty > 20) item.qty = 20;
+  updateCartUI();
+}
+
+function clearCart() {
+  cart = [];
+  updateCartUI();
+  toast('Carrito vaciado');
+}
+
+function updateCartUI() {
+  const totalItems = cart.reduce((s, i) => s + i.qty, 0);
+  const totalPrice = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+  // Count badge
+  const countEl = document.getElementById('cart-count');
+  if (countEl) countEl.textContent = totalItems;
+  const cartBtn = document.getElementById('cart-btn');
+  if (cartBtn) cartBtn.setAttribute('aria-label', 'Abrir carrito, ' + totalItems + ' artículos');
+
+  // Empty / items
+  const emptyEl = document.getElementById('cart-empty');
+  const itemsList = document.getElementById('cart-items-list');
+  const footer = document.getElementById('cart-footer');
+
+  if (!cart.length) {
+    if (emptyEl) { emptyEl.style.display = 'block'; emptyEl.classList.add('visible'); }
+    if (itemsList) itemsList.innerHTML = '';
+    if (footer) footer.style.display = 'none';
+    return;
+  }
+
+  if (emptyEl) { emptyEl.style.display = 'none'; emptyEl.classList.remove('visible'); }
+  if (footer) footer.style.display = 'block';
+
+  // Shipping bar
+  const freeThreshold = 40;
+  const pct = Math.min((totalPrice / freeThreshold) * 100, 100);
+  const remaining = Math.max(freeThreshold - totalPrice, 0).toFixed(2);
+  const shippingBarHtml =
+    '<div class="cart-shipping-bar">' +
+      '<div class="cart-shipping-track"><div class="cart-shipping-fill" style="width:' + pct + '%"></div></div>' +
+      (totalPrice >= freeThreshold
+        ? '<p class="cart-shipping-label achieved">✅ ¡Envío gratis incluido!</p>'
+        : '<p class="cart-shipping-label">Añade <strong>£' + remaining + '</strong> más para envío gratis</p>') +
+    '</div>';
+
+  // Items
+  if (itemsList) {
+    itemsList.innerHTML =
+      '<div class="cart-clear-row">' +
+        '<span class="cart-item-count">' + totalItems + ' artículo' + (totalItems !== 1 ? 's' : '') + '</span>' +
+        '<button class="cart-clear-btn" onclick="clearCart()">Vaciar carrito</button>' +
+      '</div>' +
+      cart.map(item => {
+        const subtotal = (item.price * item.qty).toFixed(2);
+        return '<div class="cart-item" role="listitem">' +
+          '<div class="cart-item-thumb">' +
+            '<img class="cart-item-img" src="' + item.img + '" alt="' + item.name + '" ' +
+              'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+            '<div class="cart-item-emoji-fallback" style="display:none;">' + item.emoji + '</div>' +
+          '</div>' +
+          '<div class="cart-item-info">' +
+            '<div class="cart-item-name">' + item.name + '</div>' +
+            '<div class="cart-item-meta"><span>' + item.weight + '</span></div>' +
+            '<div class="cart-item-row">' +
+              '<div class="cart-item-qty">' +
+                '<button class="cart-qty-btn" onclick="changeCartQty(' + item.id + ',-1)" aria-label="Reducir">−</button>' +
+                '<span class="cart-qty-num">' + item.qty + '</span>' +
+                '<button class="cart-qty-btn" onclick="changeCartQty(' + item.id + ',1)" aria-label="Aumentar">+</button>' +
+              '</div>' +
+              '<div class="cart-item-price">£' + subtotal + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<button class="cart-remove" onclick="removeFromCart(' + item.id + ')" aria-label="Eliminar ' + item.name + '">✕</button>' +
+        '</div>';
+      }).join('');
+  }
+
+  // Footer totals
+  if (footer) {
+    const shipping = totalPrice >= freeThreshold ? 0 : 4.99;
+    const grand = (totalPrice + shipping).toFixed(2);
+    footer.innerHTML =
+      shippingBarHtml +
+      '<div class="cart-subtotal">' +
+        '<span class="cart-subtotal-label">Total' + (shipping > 0 ? ' + £4.99 envío' : ' (envío gratis)') + '</span>' +
+        '<span class="cart-subtotal-value">£' + grand + '</span>' +
+      '</div>' +
+      '<div class="cart-note">✅ Envío gratis en pedidos +£40</div>' +
+      '<button class="cart-checkout-btn" onclick="handleCheckout()" aria-label="Proceder al pago">Proceder al Pago →</button>';
+  }
+}
+
+function openCart() {
+  const sidebar = document.getElementById('cart-sidebar');
+  const overlay = document.getElementById('cart-overlay');
+  if (sidebar) { sidebar.classList.add('open'); sidebar.setAttribute('aria-hidden', 'false'); }
+  if (overlay) { overlay.classList.add('open'); }
+  document.body.style.overflow = 'hidden';
+  const closeBtn = sidebar ? sidebar.querySelector('.cart-close') : null;
+  if (closeBtn) setTimeout(() => closeBtn.focus(), 50);
+}
+
+function closeCart() {
+  const sidebar = document.getElementById('cart-sidebar');
+  const overlay = document.getElementById('cart-overlay');
+  if (sidebar) { sidebar.classList.remove('open'); sidebar.setAttribute('aria-hidden', 'true'); }
+  if (overlay) { overlay.classList.remove('open'); }
+  document.body.style.overflow = '';
+  const cartBtn = document.getElementById('cart-btn');
+  if (cartBtn) cartBtn.focus();
+}
+
+// ═══════════════════════════════════════════
+// CHECKOUT
+// ═══════════════════════════════════════════
+function handleCheckout() {
+  if (!cart.length) { toast('Tu carrito está vacío', 'error'); return; }
+
+  const totalPrice = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const shipping   = totalPrice >= 40 ? 0 : 4.99;
+  const grand      = (totalPrice + shipping).toFixed(2);
+  const orderId    = 'ORD-' + Date.now().toString(36).toUpperCase().slice(-6);
+
+  // Create checkout modal if it doesn't exist
+  let overlay = document.getElementById('checkout-modal-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'checkout-modal-overlay';
+    overlay.id = 'checkout-modal-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'checkout-title');
+    document.body.appendChild(overlay);
+  }
+
+  const itemsRows = cart.map(i =>
+    '<div class="checkout-row">' +
+      '<span class="checkout-row-name">' + i.emoji + ' ' + i.name + ' x' + i.qty + '</span>' +
+      '<span class="checkout-row-price">£' + (i.price * i.qty).toFixed(2) + '</span>' +
+    '</div>'
+  ).join('');
+
+  overlay.innerHTML =
+    '<div class="checkout-modal" id="checkout-modal-inner">' +
+      '<button class="checkout-modal-close" onclick="closeCheckout()" aria-label="Cerrar">✕</button>' +
+      '<div class="checkout-hero">' +
+        '<span class="checkout-icon">🧀</span>' +
+        '<h2 class="checkout-title" id="checkout-title">Confirma tu <em>pedido</em></h2>' +
+        '<p class="checkout-sub">Pedido ' + orderId + '</p>' +
+      '</div>' +
+      '<div class="checkout-body">' +
+        '<div class="checkout-items">' + itemsRows + '</div>' +
+        '<div class="checkout-totals">' +
+          '<div class="checkout-row"><span>Subtotal</span><span>£' + totalPrice.toFixed(2) + '</span></div>' +
+          '<div class="checkout-row"><span>Envío</span><span class="' + (shipping === 0 ? 'checkout-free' : '') + '">' + (shipping === 0 ? '✅ Gratis' : '£4.99') + '</span></div>' +
+          '<div class="checkout-row checkout-grand"><span><strong>Total</strong></span><span><strong>£' + grand + '</strong></span></div>' +
+        '</div>' +
+        '<div class="checkout-info">' +
+          '<p>📍 Entrega en Nottingham y alrededores</p>' +
+          '<p>🕐 Plazo estimado: 24 horas hábiles</p>' +
+          '<p>📞 Confirmación por teléfono o email</p>' +
+        '</div>' +
+        '<div class="checkout-actions">' +
+          '<button class="checkout-confirm-btn" id="checkout-confirm-btn" onclick="confirmOrder(\'' + orderId + '\',' + grand + ')">✅ Confirmar Pedido — £' + grand + '</button>' +
+          '<button class="checkout-back-btn" onclick="closeCheckout()">← Volver al carrito</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeCheckout(); });
+
+  setTimeout(() => {
+    const btn = overlay.querySelector('.checkout-confirm-btn');
+    if (btn) btn.focus();
+  }, 50);
+}
+
+function closeCheckout() {
+  const overlay = document.getElementById('checkout-modal-overlay');
+  if (overlay) { overlay.classList.remove('open'); }
+  document.body.style.overflow = '';
+}
+
+function confirmOrder(orderId, grand) {
+  const btn = document.getElementById('checkout-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
+
+  const cartSnapshot = cart.map(i => ({ ...i }));
+
+  setTimeout(() => {
+    // Show success screen
+    const overlay = document.getElementById('checkout-modal-overlay');
+    if (overlay) {
+      const inner = overlay.querySelector('.checkout-modal');
+      if (inner) {
+        inner.innerHTML =
+          '<div class="checkout-success">' +
+            '<div class="checkout-success-icon">🎉</div>' +
+            '<h2 class="checkout-success-title">¡Pedido Confirmado!</h2>' +
+            '<p class="checkout-success-sub">Referencia: #' + orderId + '</p>' +
+            '<p class="checkout-success-text">Hemos recibido tu pedido. Nuestro equipo en Nottingham lo preparará y te contactará para confirmar la entrega.</p>' +
+            '<div class="checkout-success-info">' +
+              '<p>📦 Total cobrado: <strong>£' + grand + '</strong></p>' +
+              '<p>🚚 Entrega estimada: 24h hábiles</p>' +
+              '<p>📞 Te llamaremos para confirmar</p>' +
+            '</div>' +
+            '<button onclick="closeCheckout();scrollToDashboard();" ' +
+              'style="margin-top:20px;padding:14px 32px;background:var(--gold);color:var(--navy);border:none;border-radius:6px;cursor:pointer;font-family:Josefin Sans,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Ver Dashboard →</button>' +
+          '</div>';
+      }
+    }
+
+    // Register live order & clear cart
+    addLiveOrder(orderId, cartSnapshot, grand);
+    cart = [];
+    updateCartUI();
+    closeCart();
+
+    setTimeout(() => { closeCheckout(); }, 8000);
+  }, 1800);
+}
+
+// ═══════════════════════════════════════════
+// WISHLIST
+// ═══════════════════════════════════════════
+function toggleWishlist(e, productId) {
+  e.stopPropagation();
+  const p = PRODUCTS.find(x => x.id === productId);
+  if (!p) return;
+  if (wishlist.has(productId)) {
+    wishlist.delete(productId);
+    toast('Eliminado de favoritos');
+  } else {
+    wishlist.add(productId);
+    toast(p.emoji + ' Añadido a favoritos', 'success');
+  }
+  const btn = document.getElementById('wish-' + productId);
+  if (btn) {
+    btn.textContent = wishlist.has(productId) ? '❤️' : '🤍';
+    btn.setAttribute('aria-pressed', String(wishlist.has(productId)));
+    btn.setAttribute('aria-label', wishlist.has(productId) ? 'Quitar de favoritos' : 'Añadir a favoritos');
+  }
+}
+
+// ═══════════════════════════════════════════
+// FORMS
+// ═══════════════════════════════════════════
+function validateField(input) {
+  const id = input.id;
+  const hint = document.getElementById(id + '-hint');
+  if (!hint) return true;
+  let error = '';
+  if (input.required && !input.value.trim()) {
+    error = 'Este campo es obligatorio.';
+  } else if (input.type === 'email' && input.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value)) {
+    error = 'Introduce un email válido.';
+  } else if (input.value.trim().length > 0 && input.minLength && input.value.length < input.minLength) {
+    error = 'Mínimo ' + input.minLength + ' caracteres.';
+  }
+  if (error) {
+    input.classList.add('error'); input.classList.remove('success');
+    hint.innerHTML = '<span class="hint-error">⚠ ' + error + '</span>';
+    input.setAttribute('aria-invalid', 'true');
+  } else if (input.value.trim()) {
+    input.classList.remove('error'); input.classList.add('success');
+    hint.innerHTML = '<span class="hint-success">✓ Correcto</span>';
+    input.setAttribute('aria-invalid', 'false');
+  } else {
+    input.classList.remove('error', 'success');
+    hint.innerHTML = '';
+    input.removeAttribute('aria-invalid');
+  }
+  return !error;
+}
+
+function handleFormSubmit(e) {
+  e.preventDefault();
+  const fields = ['fname', 'lname', 'email', 'address'];
+  let valid = true;
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !validateField(el)) valid = false;
+  });
+  if (!valid) {
+    toast('Por favor corrige los errores del formulario.', 'error');
+    const first = document.querySelector('.form-input.error');
+    if (first) first.focus();
+    return;
+  }
+  const btn = document.getElementById('submit-btn');
+  const btnText = document.getElementById('btn-text');
+  if (btn) btn.disabled = true;
+  if (btn) btn.classList.add('loading');
+  if (btnText) btnText.textContent = 'Enviando...';
+  setTimeout(() => {
+    if (btn) { btn.classList.remove('loading'); btn.classList.add('sent'); }
+    if (btnText) btnText.textContent = '✅ Pedido enviado';
+    toast('¡Pedido enviado con éxito! Te contactaremos pronto.', 'success');
+    setTimeout(() => {
+      if (btn) { btn.disabled = false; btn.classList.remove('sent'); }
+      if (btnText) btnText.textContent = 'Enviar Pedido';
+      const form = document.getElementById('order-form');
+      if (form) form.reset();
+      fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('success', 'error');
+        const hint = document.getElementById(id + '-hint');
+        if (hint) hint.innerHTML = '';
+      });
+    }, 3000);
+  }, 1800);
+}
+
+function handleNewsletter(e) {
+  e.preventDefault();
+  const input = document.getElementById('newsletter-email');
+  if (!input || !input.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value)) {
+    if (input) input.style.borderColor = 'var(--error)';
+    toast('Introduce un email válido.', 'error');
+    if (input) { input.focus(); setTimeout(() => input.style.borderColor = '', 2000); }
+    return;
+  }
+  const btn = e.target.querySelector('button');
+  if (btn) { btn.textContent = '✅ ¡Suscrito!'; btn.style.background = 'var(--success)'; }
+  input.value = '';
+  toast('¡Suscripción confirmada!', 'success');
+  setTimeout(() => {
+    if (btn) { btn.textContent = 'Suscribirse →'; btn.style.background = ''; }
+  }, 3000);
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+function toast(msg, type) {
+  type = type || '';
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  el.setAttribute('role', 'alert');
+  container.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 350);
+  }, 2800);
+}
+
+// ═══════════════════════════════════════════
+// SCROLL REVEAL
+// ═══════════════════════════════════════════
+let revealObserver;
+function initReveal() {
+  if (!window.IntersectionObserver) {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+    return;
+  }
+  revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+}
+
+// ═══════════════════════════════════════════
+// HAMBURGER MENU
+// ═══════════════════════════════════════════
+function toggleMenu() {
+  const links = document.getElementById('nav-links');
+  const btn   = document.getElementById('hamburger-btn');
+  if (!links || !btn) return;
+  const isOpen = links.classList.toggle('open');
+  btn.setAttribute('aria-expanded', String(isOpen));
+  btn.setAttribute('aria-label', isOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación');
+}
+
+// ═══════════════════════════════════════════
+// PRODUCT PICKER — Contact form
+// ═══════════════════════════════════════════
+let pickerSelection = {};
+
+function renderProductPicker(cat) {
+  var wrap = document.getElementById('product-picker-wrap');
+  if (!wrap) return;
+  if (!cat) { wrap.innerHTML = ''; updatePickerSummary(); return; }
+
+  var items = PRODUCTS.filter(function(p) { return p.cat === cat; });
+  if (!items.length) {
+    wrap.innerHTML = '<p style="font-family:Josefin Sans,sans-serif;font-size:11px;color:var(--text-secondary);padding:10px 0;">Sin productos en esta categoría.</p>';
+    return;
+  }
+
+  var countLabel = items.length + ' producto' + (items.length !== 1 ? 's' : '');
+  var rows = '';
+  for (var i = 0; i < items.length; i++) {
+    var p = items[i];
+    var sel = pickerSelection[p.id];
+    var qty = sel ? sel.qty : 0;
+    var qtyControls = sel
+      ? '<button class="picker-qty-btn" onclick="changePickerQty(' + p.id + ',-1)">−</button>' +
+        '<span class="picker-qty-num">' + qty + '</span>' +
+        '<button class="picker-qty-btn" onclick="changePickerQty(' + p.id + ',1)">+</button>'
+      : '<button class="picker-qty-btn" onclick="togglePickerItem(' + p.id + ')" style="width:auto;padding:0 10px;border-radius:12px;font-size:11px;">+ Añadir</button>';
+
+    rows += '<div class="product-picker-item' + (sel ? ' selected' : '') + '" role="option" aria-selected="' + (sel ? 'true' : 'false') + '">' +
+      '<span class="picker-item-emoji" aria-hidden="true">' + p.emoji + '</span>' +
+      '<div class="picker-item-info">' +
+        '<div class="picker-item-name">' + p.name + '</div>' +
+        '<div class="picker-item-origin">📍 ' + p.origin + ' · ' + p.weight + '</div>' +
+      '</div>' +
+      '<span class="picker-item-price">£' + p.price.toFixed(2) + '</span>' +
+      '<div class="picker-item-qty-wrap" onclick="event.stopPropagation()">' + qtyControls + '</div>' +
+    '</div>';
+  }
+
+  wrap.innerHTML =
+    '<div class="product-picker" id="product-picker" role="listbox" aria-multiselectable="true">' +
+      '<div class="product-picker-header">Selecciona y ajusta cantidad <span class="product-picker-count">' + countLabel + '</span></div>' +
+      '<div class="product-picker-list">' + rows + '</div>' +
+    '</div>';
+}
+
+function togglePickerItem(productId) {
+  var product = PRODUCTS.find(function(p) { return p.id === productId; });
+  if (!product) return;
+  if (pickerSelection[productId]) {
+    delete pickerSelection[productId];
+    toast(product.emoji + ' ' + product.name + ' quitado del pedido');
+  } else {
+    pickerSelection[productId] = { product: product, qty: 1 };
+    toast('✓ ' + product.name + ' añadido al pedido', 'success');
+  }
+  var cat = document.getElementById('category') ? document.getElementById('category').value : '';
+  if (cat) renderProductPicker(cat);
+  updatePickerSummary();
+  autoFillOrderMessage();
+}
+
+function changePickerQty(productId, dir) {
+  var sel = pickerSelection[productId];
+  if (!sel) { togglePickerItem(productId); return; }
+  var newQty = sel.qty + dir;
+  if (newQty <= 0) {
+    delete pickerSelection[productId];
+    toast(sel.product.emoji + ' ' + sel.product.name + ' quitado del pedido');
+  } else {
+    sel.qty = Math.min(newQty, 20);
+  }
+  var cat = document.getElementById('category') ? document.getElementById('category').value : '';
+  if (cat) renderProductPicker(cat);
+  updatePickerSummary();
+  autoFillOrderMessage();
+}
+
+function updatePickerSummary() {
+  var wrap = document.getElementById('picker-selected-wrap');
+  var list = document.getElementById('picker-selected-list');
+  var totalEl = document.getElementById('picker-total');
+  if (!wrap || !list || !totalEl) return;
+  var selected = Object.values(pickerSelection);
+  if (!selected.length) { wrap.classList.remove('visible'); return; }
+  wrap.classList.add('visible');
+  var total = 0;
+  var itemsHtml = '';
+  for (var i = 0; i < selected.length; i++) {
+    var s = selected[i];
+    var subtotal = s.product.price * s.qty;
+    total += subtotal;
+    itemsHtml += '<li class="picker-selected-item">' +
+      '<span>' + s.product.emoji + ' ' + s.product.name +
+        '<span style="color:var(--text-secondary);font-size:10px;"> x' + s.qty + ' — £' + subtotal.toFixed(2) + '</span>' +
+      '</span>' +
+      '<div style="display:flex;align-items:center;gap:4px;">' +
+        '<button class="picker-qty-btn" onclick="changePickerQty(' + s.product.id + ',-1)" style="width:20px;height:20px;font-size:12px;">−</button>' +
+        '<span class="picker-qty-num" style="font-size:12px;">' + s.qty + '</span>' +
+        '<button class="picker-qty-btn" onclick="changePickerQty(' + s.product.id + ',1)" style="width:20px;height:20px;font-size:12px;">+</button>' +
+        '<button class="picker-remove-btn" onclick="togglePickerItem(' + s.product.id + ')" aria-label="Quitar">✕</button>' +
+      '</div>' +
+    '</li>';
+  }
+  list.innerHTML = itemsHtml;
+  var freeMsg = total >= 40 ? '(envío gratis incluido)' : '(+ £4.99 envío si pedido < £40)';
+  totalEl.innerHTML = 'Total estimado: <strong>£' + total.toFixed(2) + '</strong> <span style="font-size:9px;color:var(--text-secondary);margin-left:4px;">' + freeMsg + '</span>';
+}
+
+function autoFillOrderMessage() {
+  var msgEl = document.getElementById('message');
+  if (!msgEl || msgEl.dataset.manuallyEdited) return;
+  var selected = Object.values(pickerSelection);
+  if (!selected.length) { msgEl.value = ''; return; }
+  var lines = [];
+  var total = 0;
+  for (var i = 0; i < selected.length; i++) {
+    var s = selected[i];
+    total += s.product.price * s.qty;
+    lines.push('• ' + s.product.name + ' x' + s.qty + ' (' + s.product.weight + ' c/u) — £' + (s.product.price * s.qty).toFixed(2));
+  }
+  var shipping = total >= 40 ? 'Envío gratis' : 'Envío £4.99';
+  msgEl.value = 'Me gustaría pedir los siguientes productos:\n' + lines.join('\n') + '\n\nSubtotal: £' + total.toFixed(2) + ' - ' + shipping;
+}
+
+// ═══════════════════════════════════════════
+// DOM READY
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  // Nav links close on click (mobile)
+  document.querySelectorAll('#nav-links a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      var links = document.getElementById('nav-links');
+      var btn   = document.getElementById('hamburger-btn');
+      if (links) links.classList.remove('open');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  // Message field manual edit tracking
+  var msgEl = document.getElementById('message');
+  if (msgEl) msgEl.addEventListener('input', function() { msgEl.dataset.manuallyEdited = '1'; });
+
+  // Run main init
+  init();
+});
