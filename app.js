@@ -162,8 +162,8 @@ function toggleTheme() {
 
 function toggleHighContrast() {
   highContrast = !highContrast;
-  document.documentElement.classList.toggle('high- contrast', highContrast);
-  const btn = document.getElementById('contrast- btn');
+  document.documentElement.classList.toggle('high-contrast', highContrast);
+  const btn = document.getElementById('contrast-btn');
   if (btn) {
     btn.setAttribute('aria-pressed', String(highContrast));
     btn.classList.toggle('active', highContrast);
@@ -190,7 +190,7 @@ function setFontSize(size, btn) {
   const html = document.documentElement;
   html.setAttribute('data-font', size);
   const scales = { small: 0.9, normal: 1, large: 1.25 };
-  html.style.fontSize = 'calc(16px * ' + scales[size] + ')';
+  html.style.setProperty('--font-scale', scales[size]);
   document.querySelectorAll('#font-sm,#font-md,#font-lg').forEach(b => {
     b.classList.remove('active');
     b.setAttribute('aria-pressed', 'false');
@@ -518,8 +518,29 @@ function renderDashboard() {
       }
       var newDot = (o2.isNew && j === 0) ? '<span class="live-dot" title="Nuevo pedido"></span> ' : '';
       var idTag = o2.id ? ' <span class="dash-order-id">#' + o2.id + '</span>' : '';
+      // Look up product image
+      var orderMatchedProd = null;
+      if (o2.items && o2.items.length > 0) {
+        var firstItemName = o2.items[0].name.toLowerCase();
+        for (var p2 = 0; p2 < PRODUCTS.length; p2++) {
+          if (PRODUCTS[p2].name.toLowerCase() === firstItemName) { orderMatchedProd = PRODUCTS[p2]; break; }
+        }
+      }
+      if (!orderMatchedProd) {
+        var oName = o2.name.toLowerCase().split(' +')[0].split(' x')[0].trim();
+        for (var p3 = 0; p3 < PRODUCTS.length; p3++) {
+          if (PRODUCTS[p3].name.toLowerCase().indexOf(oName) !== -1 || oName.indexOf(PRODUCTS[p3].name.toLowerCase().split(' ')[0]) !== -1) {
+            orderMatchedProd = PRODUCTS[p3]; break;
+          }
+        }
+      }
+      var orderThumb = orderMatchedProd
+        ? '<img src="' + orderMatchedProd.img + '" alt="' + orderMatchedProd.name + '" class="dash-order-img" ' +
+          'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+          '<span class="dash-order-emoji-fb" style="display:none;" aria-hidden="true">' + o2.emoji + '</span>'
+        : '<span class="dash-order-emoji" aria-hidden="true">' + o2.emoji + '</span>';
       ordersHtml += '<div class="dash-order' + (o2.isNew && j === 0 ? ' new-order' : '') + '" role="listitem">' +
-        '<div class="dash-order-emoji" aria-hidden="true">' + o2.emoji + '</div>' +
+        '<div class="dash-order-thumb" aria-hidden="true">' + orderThumb + '</div>' +
         '<div class="dash-order-info">' +
           '<div class="dash-order-name">' + o2.name + idTag + '</div>' +
           itemDetail +
@@ -554,9 +575,22 @@ function renderDashboard() {
     var topHtml = '';
     for (var m = 0; m < TOP_PRODUCTS.length; m++) {
       var prod = TOP_PRODUCTS[m];
+      var matchedProd = null;
+      for (var n = 0; n < PRODUCTS.length; n++) {
+        var pName = PRODUCTS[n].name.toLowerCase();
+        var tName = prod.name.toLowerCase();
+        if (pName.indexOf(tName) !== -1 || tName.indexOf(pName.split(' ')[0]) !== -1) {
+          matchedProd = PRODUCTS[n]; break;
+        }
+      }
+      var thumbHtml = matchedProd
+        ? '<img src="' + matchedProd.img + '" alt="' + matchedProd.name + '" class="dash-featured-img" ' +
+          'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+          '<span class="dash-featured-emoji" style="display:none;" aria-hidden="true">' + prod.emoji + '</span>'
+        : '<span class="dash-featured-emoji" aria-hidden="true">' + prod.emoji + '</span>';
       topHtml += '<div class="dash-featured-item">' +
         '<div class="dash-featured-rank">#' + (m + 1) + '</div>' +
-        '<div class="dash-featured-emoji">' + prod.emoji + '</div>' +
+        '<div class="dash-featured-thumb">' + thumbHtml + '</div>' +
         '<div class="dash-featured-info">' +
           '<div class="dash-featured-name">' + prod.name + '</div>' +
           '<div class="dash-featured-sold">' + prod.sold + ' este mes</div>' +
@@ -910,7 +944,20 @@ function openModal(productId) {
     sheep: 'Oveja', british: 'Británico', accompaniment: 'Acompañamiento'
   };
 
-  document.getElementById('modal-emoji').textContent = p.emoji;
+  // Show product image with emoji fallback
+  const modalImg = document.getElementById('modal-img');
+  const modalEmoji = document.getElementById('modal-emoji');
+  if (modalImg && modalEmoji) {
+    modalImg.src = p.img;
+    modalImg.alt = p.name + ', ' + p.tagline;
+    modalImg.style.display = 'block';
+    modalEmoji.style.display = 'none';
+    modalImg.onerror = function() {
+      modalImg.style.display = 'none';
+      modalEmoji.style.display = 'block';
+      modalEmoji.textContent = p.emoji;
+    };
+  }
   document.getElementById('modal-img-bg').style.background = catBgMap[p.cat] || '#f5ece0';
   document.getElementById('modal-cat').textContent = catLabels[p.cat] || p.cat;
   document.getElementById('modal-origin').textContent = '📍 ' + p.origin;
@@ -930,6 +977,7 @@ function openModal(productId) {
   const modal = document.getElementById('product-modal');
   modal.classList.add('open');
   modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
 
   const addBtn = document.getElementById('modal-add-btn');
@@ -945,6 +993,7 @@ function closeModal() {
   const modal = document.getElementById('product-modal');
   modal.classList.remove('open');
   modal.style.display = 'none';
+  modal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
   currentProduct = null;
 }
