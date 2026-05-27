@@ -754,11 +754,12 @@
 </footer>
 
 <!-- PRODUCT MODAL -->
-<div class="modal-overlay" id="product-modal" role="dialog" aria-modal="true" aria-labelledby="modal-product-name" onclick="handleModalOverlayClick(event)">
+<div class="modal-overlay" id="product-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modal-product-name" onclick="handleModalOverlayClick(event)">
   <div class="modal" id="modal-inner">
     <button class="modal-close" onclick="closeModal()" aria-label="Cerrar detalle del producto">✕</button>
     <div class="modal-hero-img" id="modal-img-bg">
-      <span id="modal-emoji" style="font-size:100px;"></span>
+      <img id="modal-img" src="" alt="" style="max-height:220px;max-width:100%;object-fit:contain;display:none;">
+      <span id="modal-emoji" style="font-size:100px;display:none;" aria-hidden="true"></span>
     </div>
     <div class="modal-body">
       <div class="modal-meta">
