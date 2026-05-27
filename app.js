@@ -162,8 +162,8 @@ function toggleTheme() {
 
 function toggleHighContrast() {
   highContrast = !highContrast;
-  document.documentElement.classList.toggle('high- contrast', highContrast);
-  const btn = document.getElementById('contrast- btn');
+  document.documentElement.classList.toggle('high-contrast', highContrast);
+  const btn = document.getElementById('contrast-btn');
   if (btn) {
     btn.setAttribute('aria-pressed', String(highContrast));
     btn.classList.toggle('active', highContrast);
@@ -190,7 +190,7 @@ function setFontSize(size, btn) {
   const html = document.documentElement;
   html.setAttribute('data-font', size);
   const scales = { small: 0.9, normal: 1, large: 1.25 };
-  html.style.fontSize = 'calc(16px * ' + scales[size] + ')';
+  html.style.setProperty('--font-scale', scales[size]);
   document.querySelectorAll('#font-sm,#font-md,#font-lg').forEach(b => {
     b.classList.remove('active');
     b.setAttribute('aria-pressed', 'false');
@@ -910,7 +910,20 @@ function openModal(productId) {
     sheep: 'Oveja', british: 'Británico', accompaniment: 'Acompañamiento'
   };
 
-  document.getElementById('modal-emoji').textContent = p.emoji;
+  // Show product image with emoji fallback
+  const modalImg = document.getElementById('modal-img');
+  const modalEmoji = document.getElementById('modal-emoji');
+  if (modalImg && modalEmoji) {
+    modalImg.src = p.img;
+    modalImg.alt = p.name + ', ' + p.tagline;
+    modalImg.style.display = 'block';
+    modalEmoji.style.display = 'none';
+    modalImg.onerror = function() {
+      modalImg.style.display = 'none';
+      modalEmoji.style.display = 'block';
+      modalEmoji.textContent = p.emoji;
+    };
+  }
   document.getElementById('modal-img-bg').style.background = catBgMap[p.cat] || '#f5ece0';
   document.getElementById('modal-cat').textContent = catLabels[p.cat] || p.cat;
   document.getElementById('modal-origin').textContent = '📍 ' + p.origin;
@@ -930,6 +943,7 @@ function openModal(productId) {
   const modal = document.getElementById('product-modal');
   modal.classList.add('open');
   modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
 
   const addBtn = document.getElementById('modal-add-btn');
@@ -945,6 +959,7 @@ function closeModal() {
   const modal = document.getElementById('product-modal');
   modal.classList.remove('open');
   modal.style.display = 'none';
+  modal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
   currentProduct = null;
 }
