@@ -281,11 +281,6 @@ function validateRegField(input) {
     if (input.value.length < 8) {
       error = 'La contraseña debe tener mínimo 8 caracteres.';
     }
-  } else if (input.id === 'reg-pass-confirm') {
-    const pass = document.getElementById('reg-pass').value;
-    if (input.value !== pass) {
-      error = 'Las contraseñas no coinciden.';
-    }
   }
   return setFieldState(input, hint, error);
 }
@@ -329,7 +324,7 @@ function handleLogin(e) {
 function handleRegister(e) {
   e.preventDefault();
 
-  const fields = ['reg-fname', 'reg-lname', 'reg-email', 'reg-pass', 'reg-pass-confirm'];
+  const fields = ['reg-fname', 'reg-lname', 'reg-email', 'reg-pass'];
   let valid = fields.every(id => validateRegField(document.getElementById(id)));
 
   // Check password strength (must be at least "Acceptable")
