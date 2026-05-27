@@ -2830,6 +2830,66 @@ footer {
   .product-card { border-width: 2px; }
 }
 
+/* Manual high-contrast class (toggled via accessibility panel) */
+.high-contrast {
+  --gold: #ffd700 !important;
+  --gold-light: #ffe066 !important;
+  --border-color: #888 !important;
+}
+.high-contrast body {
+  background: #000 !important;
+  color: #fff !important;
+}
+.high-contrast .product-card,
+.high-contrast .dash-panel,
+.high-contrast .modal,
+.high-contrast .cart-sidebar,
+.high-contrast .a11y-modal {
+  background: #111 !important;
+  border: 2px solid #ffd700 !important;
+  color: #fff !important;
+}
+.high-contrast .nav-bar,
+.high-contrast .nav-inner {
+  background: #000 !important;
+  border-bottom: 2px solid #ffd700 !important;
+}
+.high-contrast a,
+.high-contrast .nav-link,
+.high-contrast .cat-filter-btn {
+  color: #ffd700 !important;
+}
+.high-contrast .submit-btn,
+.high-contrast .product-add-btn,
+.high-contrast .modal-add-btn,
+.high-contrast .cart-checkout-btn {
+  background: #ffd700 !important;
+  color: #000 !important;
+  border: 2px solid #ffd700 !important;
+  font-weight: 700 !important;
+}
+.high-contrast .form-input {
+  background: #111 !important;
+  color: #fff !important;
+  border: 2px solid #ffd700 !important;
+}
+.high-contrast .section,
+.high-contrast .hero,
+.high-contrast .catalog-section {
+  background: #000 !important;
+}
+.high-contrast .product-name,
+.high-contrast .product-desc,
+.high-contrast .modal-name,
+.high-contrast .dash-order-name {
+  color: #fff !important;
+}
+.high-contrast .product-cat,
+.high-contrast .product-origin,
+.high-contrast .product-meta-label {
+  color: #ffd700 !important;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
