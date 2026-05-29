@@ -663,11 +663,48 @@ setInterval(function() { if (liveOrders.length) renderDashboard(); }, 30000);
 // ═══════════════════════════════════════════
 // CATALOG — FILTER & RENDER
 // ═══════════════════════════════════════════
-function applyFilters() {
-  searchQuery = (document.getElementById('search-input') || {}).value || '';
-  sortBy = (document.getElementById('sort-select') || {}).value || 'default';
+// Mostrar Lista de Favoritos productos
+function showWishlist() {
+    if (wishlist.size === 0) {
+        toast("No tienes favoritos aún. Haz clic en ❤️ en cualquier producto.", "info");
+        return;
+    }
+    // Filtra los productos que están en el Set 'wishlist'
+    const filteredWishlist = PRODUCTS.filter(p => wishlist.has(p.id));
+    // Actualiza el estado global
+    filteredProducts = filteredWishlist;
+    currentCat = 'wishlist'; // Un valor especial para la categoría
+    currentPage = 1;
+    renderProducts();
+    renderPagination();
+    document.getElementById('catalog').scrollIntoView({ behavior: 'smooth' });
+}
 
-  filteredProducts = PRODUCTS.filter(p => {
+function applyFilters() {
+
+   if (currentCat === 'wishlist') {
+        filteredProducts = PRODUCTS.filter(p => wishlist.has(p.id));
+    } else {
+        // Tu código de filtrado normal...
+      searchQuery = (document.getElementById('search-input') || {}).value || '';
+  sortBy = (document.getElementById('sort-select') || {}).value || 'default';
+        filteredProducts = PRODUCTS.filter(p => {
+           
+           const matchCat   = currentCat === 'all' || p.cat === currentCat;
+           const matchPrice = p.price <= maxPrice;
+          const q = searchQuery.toLowerCase().trim();
+           const matchSearch = !q ||
+          p.name.toLowerCase().includes(q) ||
+          p.origin.toLowerCase().includes(q) ||
+          p.desc.toLowerCase().includes(q);
+          return matchCat && matchPrice && matchSearch;
+        });
+    }
+  
+/*   searchQuery = (document.getElementById('search-input') || {}).value || '';
+  sortBy = (document.getElementById('sort-select') || {}).value || 'default'; */
+
+  /* filteredProducts = PRODUCTS.filter(p => {
     const matchCat   = currentCat === 'all' || p.cat === currentCat;
     const matchPrice = p.price <= maxPrice;
     const q = searchQuery.toLowerCase().trim();
@@ -676,7 +713,7 @@ function applyFilters() {
       p.origin.toLowerCase().includes(q) ||
       p.desc.toLowerCase().includes(q);
     return matchCat && matchPrice && matchSearch;
-  });
+  }); */
 
   // Sort
   if (sortBy === 'price-asc')  filteredProducts.sort((a, b) => a.price - b.price);
@@ -713,6 +750,14 @@ function updateRangeStyle() {
   if (!input) return;
   const pct = ((input.value - input.min) / (input.max - input.min)) * 100;
   input.style.setProperty('--pct', pct + '%');
+}
+
+// función para actualizar el contador del botón cada vez que se añade/quita un favorito
+function updateWishlistCounter() {
+    const counterSpan = document.getElementById('wishlist-count');
+    if (counterSpan) {
+        counterSpan.textContent = wishlist.size;
+    }
 }
 
 function resetFilters() {
@@ -833,7 +878,7 @@ function renderProducts() {
       '</div>' +
       '<div class="product-info">' +
         '<div class="product-cat">' + catLabel + '</div>' +
-        '<div class="product-name">' + p.name + '</div>' +
+        '<h3 class="product-name">' + p.name + '</h3>' +
         '<div class="product-origin">📍 ' + p.origin + '</div>' +
         '<div class="product-desc">' + p.desc + '</div>' +
         '<div class="product-meta">' +
@@ -1173,6 +1218,12 @@ function handleCheckout() {
           '<p>🕐 Plazo estimado: 24 horas hábiles</p>' +
           '<p>📞 Confirmación por teléfono o email</p>' +
         '</div>' +
+
+         '<div class="form-field" style="margin-bottom: 16px;">' +
+              '<label for="checkout-address" class="form-label">Dirección de entrega *</label>' +
+              '<input type="text" id="checkout-address" class="form-input" placeholder="Tu dirección en Nottingham" required>' +
+        '</div>' +
+          
         '<div class="checkout-actions">' +
           '<button class="checkout-confirm-btn" id="checkout-confirm-btn" onclick="confirmOrder(\'' + orderId + '\',' + grand + ')">✅ Confirmar Pedido — £' + grand + '</button>' +
           '<button class="checkout-back-btn" onclick="closeCheckout()">< Volver al carrito</button>' +
@@ -1197,6 +1248,14 @@ function closeCheckout() {
 }
 
 function confirmOrder(orderId, grand) {
+  const addressInput = document.getElementById('checkout-address');
+    if (!addressInput || !addressInput.value.trim()) {
+        toast('Por favor, introduce tu dirección de entrega.', 'error');
+        const btn = document.getElementById('checkout-confirm-btn');
+        if (btn) btn.disabled = false;
+        return;
+    }
+  
   const btn = document.getElementById('checkout-confirm-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
 
@@ -1255,6 +1314,7 @@ function toggleWishlist(e, productId) {
     btn.setAttribute('aria-pressed', String(wishlist.has(productId)));
     btn.setAttribute('aria-label', wishlist.has(productId) ? 'Quitar de favoritos' : 'Añadir a favoritos');
   }
+  updateWishlistCounter();
 }
 
 // ═══════════════════════════════════════════
