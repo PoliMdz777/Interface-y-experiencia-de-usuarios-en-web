@@ -1391,7 +1391,8 @@ function toggleMenu() {
   if (!links || !btn) return;
   const isOpen = links.classList.toggle('open');
   btn.setAttribute('aria-expanded', String(isOpen));
-  btn.setAttribute('aria-label', isOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación');
+//  btn.setAttribute('aria-label', isOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación');
+  document.body.style.overflow = isOpen ? 'hidden' : '';
 }
 
 // ═══════════════════════════════════════════
