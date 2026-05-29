@@ -246,6 +246,19 @@ function initScrollNav() {
 // CHEESE CURSOR (index page)
 // ═══════════════════════════════════════════
 function initIndexCursor() {
+  // Detectar táctil o tamaño pequeño
+  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isSmallScreen = window.matchMedia('(max-width: 768px)').matches;
+  if (isTouch || isSmallScreen) {
+    // Ocultar elementos y salir
+    const fog = document.getElementById('index-cursor-fog');
+    const cheese = document.getElementById('index-cursor-cheese');
+    if (fog) fog.style.display = 'none';
+    if (cheese) cheese.style.display = 'none';
+    document.body.classList.remove('cursor-active');
+    return;
+  }
+  
   const fog    = document.getElementById('index-cursor-fog');
   const cheese = document.getElementById('index-cursor-cheese');
   if (!cheese) return;
